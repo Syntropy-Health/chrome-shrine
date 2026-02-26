@@ -1,0 +1,103 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "dist/manifest.json" ]; then
+            echo "❌ Build failed: manifest.json not found"
+            exit 1
+          fi
+          if [ ! -f "dist/background/service-worker.js" ]; then
+            echo "❌ Build failed: service-worker.js not found"
+            exit 1
+          fi
+          if [ ! -f "dist/content/content.js" ]; then
+            echo "❌ Build failed: content.js not found"
+            exit 1
+          fi
+          echo "✅ Build verification successful"
+
+      - name: Check bundle size
+        run: |
+          cd dist
+          SIZE=$(du -sb . | cut -f1)
+          SIZE_MB=$((SIZE / 1024 / 1024))
+          echo "Bundle size: ${SIZE_MB}MB"
+
+          if [ $SIZE -gt 104857600 ]; then  # 100MB limit
+            echo "❌ Bundle exceeds Chrome Web Store limit (100MB)"
+            exit 1
+          fi
+          echo "✅ Bundle size within limits"
+
+      - name: Validate manifest
+        run: |
+          node -e "
+          const manifest = require('./dist/manifest.json');
+          const pkg = require('./package.json');
+
+          if (manifest.version !== pkg.version) {
+            console.error('❌ Version mismatch:');
+            console.error('  package.json:', pkg.version);
+            console.error('  manifest.json:', manifest.version);
+            process.exit(1);
+          }
+
+          if (manifest.manifest_version !== 3) {
+            console.error('❌ Manifest version must be 3');
+            process.exit(1);
+          }
+
+          console.log('✅ Manifest validation successful');
+          "
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for secrets in code
+        run: |
+          if grep -r "sk-[A-Za-z0-9]\{40,\}" src/; then
+            echo "❌ Potential API key found in source code"
+            exit 1
+          fi
+          if grep -r "ghp_[A-Za-z0-9]\{36,\}" src/; then
+            echo "❌ Potential GitHub token found in source code"
+            exit 1
+          fi
+          echo "✅ No secrets found in code"

@@ -1,0 +1,120 @@
+name: Deploy to Chrome Web Store
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., 1.0.0)'
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Build extension
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create package
+        run: |
+          cd dist
+          zip -r ../syntropy-extension-v${{ steps.version.outputs.VERSION }}.zip . -x "*.DS_Store" "*.map"
+          cd ..
+
+      - name: Get Chrome Web Store access token
+        id: token
+        run: |
+          ACCESS_TOKEN=$(curl -s "https://oauth2.googleapis.com/token" \
+            -d "client_id=${{ secrets.CHROME_WEBSTORE_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.CHROME_WEBSTORE_CLIENT_SECRET }}" \
+            -d "refresh_token=${{ secrets.CHROME_WEBSTORE_REFRESH_TOKEN }}" \
+            -d "grant_type=refresh_token" | jq -r .access_token)
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Upload to Chrome Web Store
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.ACCESS_TOKEN }}" \
+            -H "x-goog-api-version: 2" \
+            -X PUT \
+            -T syntropy-extension-v${{ steps.version.outputs.VERSION }}.zip \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.CHROME_EXTENSION_ID }}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Upload failed with HTTP code: $HTTP_CODE"
+            echo "$RESPONSE"
+            exit 1
+          fi
+
+          echo "✅ Upload successful"
+
+      - name: Publish extension
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.ACCESS_TOKEN }}" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0" \
+            -X POST \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/${{ secrets.CHROME_EXTENSION_ID }}/publish")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "⚠️ Publish returned HTTP code: $HTTP_CODE"
+            echo "$RESPONSE"
+            echo "Note: Extension may require manual review"
+          else
+            echo "✅ Publish successful"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: syntropy-extension-v${{ steps.version.outputs.VERSION }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "Version: ${{ steps.version.outputs.VERSION }}"
+          echo "Chrome Web Store: https://chrome.google.com/webstore/detail/${{ secrets.CHROME_EXTENSION_ID }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed"
+          echo "Check the logs above for details"

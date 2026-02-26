@@ -1,0 +1,300 @@
+/**
+ * Content Script Styles
+ * Styles for hover cards and injected UI elements
+ */
+
+/* Hover Card */
+.syntropy-hover-card {
+  position: absolute;
+  width: 400px;
+  max-width: 90vw;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.syntropy-hover-card.syntropy-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.syntropy-hover-card.syntropy-fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Card Header */
+.syntropy-card-header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.syntropy-card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.syntropy-card-brand {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.syntropy-score-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.syntropy-score-badge.excellent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.syntropy-score-badge.good {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.syntropy-score-badge.fair {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.syntropy-score-badge.poor {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Card Content */
+.syntropy-card-content {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.syntropy-summary {
+  margin-bottom: 16px;
+}
+
+.syntropy-summary p {
+  margin: 0;
+  color: #374151;
+}
+
+/* Scores */
+.syntropy-scores {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.syntropy-score {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.syntropy-score .label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.syntropy-score .value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.syntropy-score .value.excellent {
+  color: #16a34a;
+}
+
+.syntropy-score .value.good {
+  color: #2563eb;
+}
+
+.syntropy-score .value.fair {
+  color: #d97706;
+}
+
+.syntropy-score .value.poor {
+  color: #dc2626;
+}
+
+/* Concerns */
+.syntropy-concerns {
+  margin-bottom: 16px;
+}
+
+.syntropy-concerns h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.syntropy-concern {
+  padding: 12px;
+  background: #fef2f2;
+  border-left: 3px solid #dc2626;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.syntropy-concern.high {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+.syntropy-concern.critical {
+  background: #fef2f2;
+  border-color: #991b1b;
+}
+
+.syntropy-concern strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #111827;
+}
+
+.syntropy-concern p {
+  margin: 0;
+  font-size: 13px;
+  color: #374151;
+}
+
+/* Insights */
+.syntropy-insights {
+  margin-bottom: 16px;
+}
+
+.syntropy-insights h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.syntropy-insights ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.syntropy-insights li {
+  position: relative;
+  margin-bottom: 8px;
+  padding-left: 12px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.syntropy-insights li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #9ca3af;
+}
+
+.syntropy-insights li.importance-high::before {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* Loading */
+.syntropy-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 12px;
+}
+
+.syntropy-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: syntropy-spin 0.8s linear infinite;
+}
+
+@keyframes syntropy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.syntropy-loading p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Card Footer */
+.syntropy-card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.syntropy-view-details {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.syntropy-view-details:hover {
+  color: #1e40af;
+}
+
+/* Scrollbar */
+.syntropy-card-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.syntropy-card-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.syntropy-card-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.syntropy-card-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

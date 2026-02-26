@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Syntropy Extension - Manual Test Runner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+
+    h1 {
+      color: #2563eb;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 30px;
+    }
+
+    .test-section {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .test-section h2 {
+      color: #111827;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .test-section p {
+      color: #6b7280;
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+
+    .button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 10px;
+    }
+
+    .button:hover {
+      background: #1e40af;
+    }
+
+    .button-secondary {
+      background: #6b7280;
+    }
+
+    .button-secondary:hover {
+      background: #4b5563;
+    }
+
+    .button-success {
+      background: #16a34a;
+    }
+
+    .button-success:hover {
+      background: #15803d;
+    }
+
+    .console-output {
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .console-output.visible {
+      display: block;
+    }
+
+    .console-output pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .status {
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .status.visible {
+      display: block;
+    }
+
+    .status.success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .status.info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+
+    .test-results {
+      margin-top: 20px;
+    }
+
+    .instructions {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .instructions h3 {
+      color: #92400e;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .instructions ol {
+      margin-left: 20px;
+      color: #78350f;
+    }
+
+    .instructions li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Syntropy Extension - Manual Test Runner</h1>
+    <p class="subtitle">Test extension functionality without building</p>
+
+    <div class="instructions">
+      <h3>📋 Prerequisites</h3>
+      <ol>
+        <li>Extension must be loaded in Chrome</li>
+        <li>OpenAI API key must be configured</li>
+        <li>Run tests on actual food websites for best results</li>
+      </ol>
+    </div>
+
+    <!-- Test 1: Configuration -->
+    <div class="test-section">
+      <h2>1. Configuration Test</h2>
+      <p>Verify that configuration is loaded and API key is present.</p>
+      <button class="button" onclick="runConfigTest()">Run Configuration Test</button>
+      <div id="config-status" class="status"></div>
+      <div id="config-output" class="console-output"></div>
+    </div>
+
+    <!-- Test 2: Scraper Detection -->
+    <div class="test-section">
+      <h2>2. Scraper Detection Test</h2>
+      <p>Test if the extension can detect food products on this page.</p>
+      <button class="button" onclick="runScraperTest()">Run Scraper Test</button>
+      <button class="button-secondary button" onclick="navigateToAmazon()">Go to Amazon Fresh</button>
+      <button class="button-secondary button" onclick="navigateToCookUnity()">Go to CookUnity</button>
+      <div id="scraper-status" class="status"></div>
+      <div id="scraper-output" class="console-output"></div>
+    </div>
+
+    <!-- Test 3: Integration Test -->
+    <div class="test-section">
+      <h2>3. FDA/USDA Integration Test</h2>
+      <p>Test recall data fetching from FDA and USDA APIs.</p>
+      <button class="button" onclick="runIntegrationTest()">Run Integration Test</button>
+      <div id="integration-status" class="status"></div>
+      <div id="integration-output" class="console-output"></div>
+    </div>
+
+    <!-- Test 4: AI Analysis Test -->
+    <div class="test-section">
+      <h2>4. AI Analysis Test</h2>
+      <p>Test AI-powered product analysis (requires products on page).</p>
+      <button class="button" onclick="runAITest()">Run AI Test</button>
+      <div id="ai-status" class="status"></div>
+      <div id="ai-output" class="console-output"></div>
+    </div>
+
+    <!-- Test 5: UI Components Test -->
+    <div class="test-section">
+      <h2>5. UI Components Test</h2>
+      <p>Test UI component rendering.</p>
+      <button class="button" onclick="runUITest()">Run UI Test</button>
+      <button class="button-secondary button" onclick="clearUITest()">Clear UI Tests</button>
+      <div id="ui-status" class="status"></div>
+      <div id="ui-output" class="console-output"></div>
+      <div id="ui-test-container" class="test-results"></div>
+    </div>
+
+    <!-- Test 6: Full Integration Test -->
+    <div class="test-section">
+      <h2>6. Full Integration Test</h2>
+      <p>Run all tests in sequence.</p>
+      <button class="button-success button" onclick="runAllTests()">Run All Tests</button>
+      <div id="all-status" class="status"></div>
+      <div id="all-output" class="console-output"></div>
+    </div>
+  </div>
+
+  <script>
+    // Helper function to log to console output
+    function logToConsole(elementId, message, type = 'log') {
+      const output = document.getElementById(elementId);
+      output.classList.add('visible');
+      const timestamp = new Date().toLocaleTimeString();
+      const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+      output.innerHTML += `<pre>[${timestamp}] ${prefix} ${message}</pre>`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // Helper function to show status
+    function showStatus(elementId, message, type) {
+      const status = document.getElementById(elementId);
+      status.textContent = message;
+      status.className = `status visible ${type}`;
+    }
+
+    // Test 1: Configuration
+    async function runConfigTest() {
+      const outputId = 'config-output';
+      const statusId = 'config-status';
+      document.getElementById(outputId).innerHTML = '';
+
+      logToConsole(outputId, 'Starting configuration test...');
+
+      try {
+        // Send message to background script
+        chrome.runtime.sendMessage({ type: 'GET_CONFIG' }, (response) => {
+          if (response?.success) {
+            logToConsole(outputId, 'Configuration loaded successfully', 'success');
+            logToConsole(outputId, `Provider: ${response.data.provider}`);
+            logToConsole(outputId, `Model: ${response.data.model}`);
+            logToConsole(outputId, `API Key: ${response.data.apiKey ? '***configured***' : 'NOT CONFIGURED'}`);
+
+            if (response.data.apiKey) {
+              showStatus(statusId, '✅ Configuration test passed', 'success');
+            } else {
+              showStatus(statusId, '⚠️ API key not configured', 'error');
+            }
+          } else {
+            throw new Error(response?.error || 'Failed to load configuration');
+          }
+        });
+      } catch (error) {
+        logToConsole(outputId, `Error: ${error.message}`, 'error');
+        showStatus(statusId, '❌ Configuration test failed', 'error');
+      }
+    }
+
+    // Test 2: Scraper
+    async function runScraperTest() {
+      const outputId = 'scraper-output';
+      const statusId = 'scraper-status';
+      document.getElementById(outputId).innerHTML = '';
+
+      logToConsole(outputId, 'Starting scraper test...');
+      logToConsole(outputId, `Current URL: ${window.location.href}`);
+
+      try {
+        // Send message to content script
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PRODUCTS' }, (response) => {
+            if (response?.success) {
+              const products = response.data;
+              logToConsole(outputId, `Found ${products.length} products`, 'success');
+
+              if (products.length > 0) {
+                logToConsole(outputId, '\nFirst product:');
+                logToConsole(outputId, JSON.stringify(products[0], null, 2));
+                showStatus(statusId, `✅ Found ${products.length} products`, 'success');
+              } else {
+                logToConsole(outputId, 'No products found on this page');
+                showStatus(statusId, '⚠️ No products detected', 'info');
+              }
+            } else {
+              throw new Error(response?.error || 'Failed to extract products');
+            }
+          });
+        });
+      } catch (error) {
+        logToConsole(outputId, `Error: ${error.message}`, 'error');
+        showStatus(statusId, '❌ Scraper test failed', 'error');
+      }
+    }
+
+    // Test 3: Integrations
+    async function runIntegrationTest() {
+      const outputId = 'integration-output';
+      const statusId = 'integration-status';
+      document.getElementById(outputId).innerHTML = '';
+
+      logToConsole(outputId, 'Starting integration test...');
+
+      try {
+        chrome.runtime.sendMessage({ type: 'GET_RECALLS' }, (response) => {
+          if (response?.success) {
+            const recalls = response.data;
+            logToConsole(outputId, `Found ${recalls.length} recalls`, 'success');
+
+            if (recalls.length > 0) {
+              const sources = [...new Set(recalls.map(r => r.source))];
+              logToConsole(outputId, `Sources: ${sources.join(', ')}`);
+              logToConsole(outputId, '\nFirst recall:');
+              logToConsole(outputId, JSON.stringify(recalls[0], null, 2));
+              showStatus(statusId, `✅ Found ${recalls.length} recalls from ${sources.length} sources`, 'success');
+            } else {
+              logToConsole(outputId, 'No recalls found');
+              showStatus(statusId, '⚠️ No recalls found', 'info');
+            }
+          } else {
+            throw new Error(response?.error || 'Failed to fetch recalls');
+          }
+        });
+      } catch (error) {
+        logToConsole(outputId, `Error: ${error.message}`, 'error');
+        showStatus(statusId, '❌ Integration test failed', 'error');
+      }
+    }
+
+    // Test 4: AI Analysis
+    async function runAITest() {
+      const outputId = 'ai-output';
+      const statusId = 'ai-status';
+      document.getElementById(outputId).innerHTML = '';
+
+      logToConsole(outputId, 'Starting AI analysis test...');
+
+      try {
+        // First get products
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PRODUCTS' }, (response) => {
+            if (response?.success && response.data.length > 0) {
+              const product = response.data[0];
+              logToConsole(outputId, `Analyzing: ${product.name}`);
+
+              // Request analysis
+              chrome.tabs.sendMessage(tabs[0].id, {
+                type: 'ANALYZE_PRODUCT',
+                payload: { productId: product.id }
+              }, (analysisResponse) => {
+                if (analysisResponse?.success) {
+                  const analysis = analysisResponse.data;
+                  logToConsole(outputId, 'Analysis complete!', 'success');
+                  logToConsole(outputId, `Safety Score: ${analysis.safetyScore}/100`);
+                  logToConsole(outputId, `Health Score: ${analysis.healthScore}/100`);
+                  logToConsole(outputId, `Summary: ${analysis.summary}`);
+                  logToConsole(outputId, `Concerns: ${analysis.concerns.length}`);
+                  showStatus(statusId, '✅ AI analysis successful', 'success');
+                } else {
+                  throw new Error(analysisResponse?.error || 'Analysis failed');
+                }
+              });
+            } else {
+              throw new Error('No products found to analyze');
+            }
+          });
+        });
+      } catch (error) {
+        logToConsole(outputId, `Error: ${error.message}`, 'error');
+        showStatus(statusId, '❌ AI test failed', 'error');
+      }
+    }
+
+    // Test 5: UI Components
+    function runUITest() {
+      const outputId = 'ui-output';
+      const statusId = 'ui-status';
+      const container = document.getElementById('ui-test-container');
+      document.getElementById(outputId).innerHTML = '';
+      container.innerHTML = '';
+
+      logToConsole(outputId, 'Starting UI component test...');
+
+      try {
+        // Test will inject UI components
+        container.innerHTML = `
+          <h3 style="margin-bottom: 15px;">Test Components:</h3>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="syntropy-score-badge excellent">85</div>
+            <div class="syntropy-score-badge good">72</div>
+            <div class="syntropy-score-badge fair">55</div>
+            <div class="syntropy-score-badge poor">30</div>
+          </div>
+          <div style="margin-top: 15px;">
+            <div class="syntropy-concern high" style="padding: 12px; background: #fee2e2; border-left: 3px solid #dc2626; border-radius: 6px;">
+              <strong>Test Concern</strong>
+              <p>This is a test safety concern</p>
+            </div>
+          </div>
+        `;
+
+        logToConsole(outputId, 'UI components rendered', 'success');
+        showStatus(statusId, '✅ UI test successful', 'success');
+      } catch (error) {
+        logToConsole(outputId, `Error: ${error.message}`, 'error');
+        showStatus(statusId, '❌ UI test failed', 'error');
+      }
+    }
+
+    function clearUITest() {
+      document.getElementById('ui-test-container').innerHTML = '';
+    }
+
+    // Test 6: Run all tests
+    async function runAllTests() {
+      const outputId = 'all-output';
+      const statusId = 'all-status';
+      document.getElementById(outputId).innerHTML = '';
+
+      logToConsole(outputId, '========================================');
+      logToConsole(outputId, 'RUNNING ALL TESTS');
+      logToConsole(outputId, '========================================\n');
+
+      let passed = 0;
+      let failed = 0;
+
+      // Run each test
+      await new Promise(resolve => {
+        setTimeout(() => {
+          logToConsole(outputId, '1. Configuration Test');
+          runConfigTest();
+          resolve();
+        }, 500);
+      });
+
+      await new Promise(resolve => {
+        setTimeout(() => {
+          logToConsole(outputId, '\n2. Scraper Test');
+          runScraperTest();
+          resolve();
+        }, 1500);
+      });
+
+      await new Promise(resolve => {
+        setTimeout(() => {
+          logToConsole(outputId, '\n3. Integration Test');
+          runIntegrationTest();
+          resolve();
+        }, 2500);
+      });
+
+      setTimeout(() => {
+        logToConsole(outputId, '\n========================================');
+        logToConsole(outputId, 'ALL TESTS COMPLETE');
+        logToConsole(outputId, '========================================');
+        showStatus(statusId, '✅ Test suite complete - check individual test outputs', 'success');
+      }, 4000);
+    }
+
+    // Navigation helpers
+    function navigateToAmazon() {
+      window.open('https://www.amazon.com/alm/storefront/fresh/', '_blank');
+    }
+
+    function navigateToCookUnity() {
+      window.open('https://www.cookunity.com/meals/', '_blank');
+    }
+  </script>
+</body>
+</html>
