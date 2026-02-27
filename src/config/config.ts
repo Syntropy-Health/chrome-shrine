@@ -41,6 +41,7 @@ export const CONFIG_KEYS = {
 export const API_ENDPOINTS = {
   FDA_RECALLS: 'https://api.fda.gov/food/enforcement.json',
   USDA_RECALLS: 'https://www.fsis.usda.gov/fsis/api/recall',
+  DIET_API: process.env.DIET_API_URL || 'http://localhost:8000',
 } as const;
 
 /**

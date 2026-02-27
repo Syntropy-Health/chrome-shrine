@@ -268,6 +268,9 @@ export enum MessageType {
   EXTRACT_IMAGES = 'EXTRACT_IMAGES',
   CACHE_ANALYSIS = 'CACHE_ANALYSIS',
   GET_CACHED_ANALYSIS = 'GET_CACHED_ANALYSIS',
+  DIET_HEALTH_CHECK = 'DIET_HEALTH_CHECK',
+  DIET_REPORT_SYMPTOMS = 'DIET_REPORT_SYMPTOMS',
+  DIET_SEARCH_PRODUCTS = 'DIET_SEARCH_PRODUCTS',
 }
 
 /**
@@ -309,4 +312,101 @@ export interface StorageSchema {
     rating: number;
     timestamp: number;
   }[];
+}
+
+/**
+ * DIET API -- Symptom context for reporting
+ */
+export interface DietSymptomContext {
+  recent_foods: string[];
+  sleep_hours?: number;
+  stress_level?: number;  // 1-10
+  exercise_minutes?: number;
+}
+
+/**
+ * DIET API -- Symptom input
+ */
+export interface DietSymptomInput {
+  name: string;
+  severity: number;  // 1-10
+  duration_hours?: number;
+  notes?: string;
+}
+
+/**
+ * DIET API -- Symptom report request body
+ * Mirrors: diet/app/routers/diet_insight.py SymptomReportRequest
+ */
+export interface DietSymptomReportRequest {
+  user_id: string;
+  symptoms: DietSymptomInput[];
+  context?: DietSymptomContext;
+}
+
+/**
+ * DIET API -- Symptom report response
+ * Mirrors: diet/app/routers/diet_insight.py SymptomReportResponse
+ */
+export interface DietSymptomReportResponse {
+  process_id: string;
+  user_id: string;
+  success: boolean;
+  processing_time_ms: number;
+  analysis?: {
+    insights: Record<string, any>[];
+    deficiencies: Record<string, any>[];
+    patterns_detected: number;
+    severity_score: number;
+    confidence_score: number;
+  };
+  recommendations?: {
+    dietary_recommendations: Record<string, any>[];
+    supplement_recommendations: Record<string, any>[];
+    lifestyle_recommendations: Record<string, any>[];
+    priority_actions: string[];
+    overall_guidance: string;
+  };
+  notification?: {
+    alert_level: string;
+    title: string;
+    message: string;
+    call_to_action: string;
+  };
+  error?: string;
+}
+
+/**
+ * DIET API -- Product search request body
+ * Mirrors: diet/app/routers/diet_insight.py StoreSearchRequest
+ */
+export interface DietSearchRequest {
+  query: string;
+  symptoms?: string[];
+  deficiencies?: string[];
+  dietary_requirements?: string[];
+  limit?: number;
+  max_price?: number;
+  store_types?: string[];
+}
+
+/**
+ * DIET API -- Product search response
+ * Mirrors: diet/app/routers/diet_insight.py StoreSearchResponse
+ */
+export interface DietSearchResponse {
+  query: string;
+  stores_searched: string[];
+  total_results: number;
+  results: Record<string, any>[];
+  processing_time_ms: number;
+}
+
+/**
+ * DIET API -- Health check response
+ */
+export interface DietHealthCheckResponse {
+  status: string;
+  version?: string;
+  [key: string]: any;
 }
