@@ -21,6 +21,9 @@ import type {
 /** Base path for all DIET API v1 routes */
 const DIET_API_PREFIX = '/api/v1';
 
+/** Request timeout in milliseconds (30 seconds) */
+const REQUEST_TIMEOUT_MS = 30_000;
+
 /**
  * DIET API client
  * Provides typed methods for all DIET endpoints used by Chrome Shrine.
@@ -84,7 +87,7 @@ export class DietApiClient {
       const body: DietSymptomReportRequest = {
         user_id: userId,
         symptoms,
-        context,
+        ...(context !== undefined && { context }),
       };
 
       return await this.request<DietSymptomReportResponse>(
@@ -162,9 +165,13 @@ export class DietApiClient {
     const url = `${this.baseUrl}${path}`;
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(init.headers as Record<string, string> || {}),
     };
+
+    // Only set Content-Type for requests that carry a body
+    if (init.body) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     // Attach Bearer token if available (future-proofing for DIET auth middleware)
     const token = this.getAuthToken();
@@ -172,18 +179,27 @@ export class DietApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
-      ...init,
-      headers,
-    });
+    // Guard against hung connections -- service workers are killed after 5 min
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => 'Unknown error');
-      throw new Error(
-        `DIET API error: ${response.status} ${response.statusText} - ${errorBody}`
-      );
+    try {
+      const response = await fetch(url, {
+        ...init,
+        headers,
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => 'Unknown error');
+        throw new Error(
+          `DIET API error: ${response.status} ${response.statusText} - ${errorBody}`
+        );
+      }
+
+      return response.json() as Promise<T>;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return response.json() as Promise<T>;
   }
 }
