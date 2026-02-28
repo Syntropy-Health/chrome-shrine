@@ -120,6 +120,7 @@ module.exports = (env, argv) => {
         'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
         'process.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || ''),
         'process.env.OPENAI_MODEL': JSON.stringify(process.env.OPENAI_MODEL || 'gpt-4-vision-preview'),
+        'process.env.DIET_API_URL': JSON.stringify(process.env.DIET_API_URL || 'http://localhost:8000'),
       }),
     ],
   };

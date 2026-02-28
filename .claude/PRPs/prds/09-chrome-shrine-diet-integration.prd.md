@@ -123,7 +123,7 @@ DIET API call from extension (auth via Clerk token), Open Diet Data macro lookup
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
-| 1 | Auth bridge | Clerk auth from extension to DIET service | pending | - | PRD-02 (DIET stable) | - |
+| 1 | Auth bridge | Clerk auth from extension to DIET service | in-progress | - | PRD-02 (DIET stable) | [plan](../plans/09-chrome-shrine-diet-integration.plan.md) |
 | 2 | Open Diet Data integration | Macro lookup module in extension | pending | with 1 | PRD-01 (macro calc) | - |
 | 3 | DIET scoring integration | Personalized food scoring from DIET | pending | - | 1 | - |
 | 4 | Hover-card redesign | Updated UI with macros + score + recommendation | pending | - | 2, 3 | - |

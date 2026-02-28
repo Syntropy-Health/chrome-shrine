@@ -6,6 +6,7 @@
  */
 
 import { IntegrationManager } from '@modules/integrations';
+import { DietApiClient } from '@modules/integrations/diet-api';
 import { ConfigManager } from '@/config/config';
 import { CacheManager } from '@utils/storage';
 import type { ExtensionMessage, ExtensionResponse } from '@types';
@@ -15,6 +16,7 @@ import type { ExtensionMessage, ExtensionResponse } from '@types';
  */
 class BackgroundService {
   private integrationManager = IntegrationManager.getInstance();
+  private dietClient = DietApiClient.getInstance();
   private config = ConfigManager.getInstance();
 
   /**
@@ -100,6 +102,28 @@ class BackgroundService {
           {
             const analysis = await CacheManager.getAnalysis(message.payload.productId);
             sendResponse({ success: true, data: analysis });
+          }
+          break;
+
+        case 'DIET_HEALTH_CHECK':
+          {
+            const health = await this.dietClient.healthCheck();
+            sendResponse({ success: !!health, data: health });
+          }
+          break;
+
+        case 'DIET_REPORT_SYMPTOMS':
+          {
+            const { symptoms, context } = message.payload;
+            const result = await this.dietClient.reportSymptoms(symptoms, context);
+            sendResponse({ success: !!result?.success, data: result });
+          }
+          break;
+
+        case 'DIET_SEARCH_PRODUCTS':
+          {
+            const searchResult = await this.dietClient.searchProducts(message.payload);
+            sendResponse({ success: !!searchResult, data: searchResult });
           }
           break;
 
