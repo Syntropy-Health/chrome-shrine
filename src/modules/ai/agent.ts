@@ -11,7 +11,8 @@
 import { ConfigManager } from '@/config/config';
 import { openai } from '@ai-sdk/openai';
 import { IntegrationManager } from '@modules/integrations';
-import type { AIAnalysis, ExtensionConfig, FoodProduct } from '@types';
+import { OpenDietDataClient } from '@modules/integrations/open-diet-data';
+import type { AIAnalysis, ExtensionConfig, FoodProduct, NutritionInfo } from '@types';
 import { CacheManager } from '@utils/storage';
 import { generateObject } from 'ai';
 import { ImageProcessor } from './image-processor';
@@ -25,6 +26,7 @@ export class FoodAnalysisAgent {
   private static instance: FoodAnalysisAgent;
   private imageProcessor = ImageProcessor.getInstance();
   private integrationManager = IntegrationManager.getInstance();
+  private nutritionClient = OpenDietDataClient.getInstance();
   private config = ConfigManager.getInstance();
 
   private constructor() { }
@@ -104,13 +106,20 @@ export class FoodAnalysisAgent {
         }
       }
 
-      // Check for recalls
-      let recalls = [];
-      if (includeRecalls) {
-        recalls = await this.integrationManager.checkProduct(
-          product.name,
-          product.brand
-        );
+      // Fetch recalls and real nutrition data in parallel
+      const [recalls, usdaNutrition] = await Promise.all([
+        includeRecalls
+          ? this.integrationManager.checkProduct(product.name, product.brand)
+          : Promise.resolve([]),
+        this.fetchNutritionData(product.name),
+      ]);
+
+      // Enrich product with real USDA nutrition data when available
+      if (usdaNutrition) {
+        product.nutrition = {
+          ...product.nutrition,
+          ...usdaNutrition,
+        };
       }
 
       // Generate AI analysis
@@ -155,6 +164,15 @@ export class FoodAnalysisAgent {
           confidence: imageAnalysis?.confidence || 0.9,
         },
       };
+
+      // Add note when nutrition data is sourced from USDA FoodData Central
+      if (usdaNutrition) {
+        analysis.insights.push({
+          category: 'Nutrition Source',
+          text: 'Nutrition data sourced from USDA FoodData Central for accuracy.',
+          importance: 'medium',
+        });
+      }
 
       // Cache the analysis
       await CacheManager.setAnalysis(product.id, analysis);
@@ -292,6 +310,21 @@ Product: ${product.name}`;
 Be thorough but concise. Focus on actionable insights.`;
 
     return prompt;
+  }
+
+  /**
+   * Fetch real nutrition data from USDA FoodData Central
+   * Non-blocking — returns null on any failure to allow AI fallback
+   * @param productName - Product name to look up
+   * @returns NutritionInfo or null
+   */
+  private async fetchNutritionData(productName: string): Promise<NutritionInfo | null> {
+    try {
+      return await this.nutritionClient.getFoodNutrition(productName);
+    } catch (error) {
+      console.error('[FoodAnalysisAgent] USDA nutrition fetch failed:', error);
+      return null;
+    }
   }
 
   /**

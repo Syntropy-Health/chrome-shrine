@@ -42,7 +42,15 @@ export const API_ENDPOINTS = {
   FDA_RECALLS: 'https://api.fda.gov/food/enforcement.json',
   USDA_RECALLS: 'https://www.fsis.usda.gov/fsis/api/recall',
   DIET_API: process.env.DIET_API_URL || 'http://localhost:8000',
+  USDA_FDC: 'https://api.nal.usda.gov/fdc/v1',
 } as const;
+
+/**
+ * USDA FoodData Central API key
+ * DEMO_KEY is free and provides 1000 requests/hour.
+ * For production, register for a free key at https://fdc.nal.usda.gov/api-key-signup.html
+ */
+export const USDA_FDC_API_KEY = 'DEMO_KEY';
 
 /**
  * Supported LLM providers configuration

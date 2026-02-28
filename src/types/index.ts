@@ -271,6 +271,8 @@ export enum MessageType {
   DIET_HEALTH_CHECK = 'DIET_HEALTH_CHECK',
   DIET_REPORT_SYMPTOMS = 'DIET_REPORT_SYMPTOMS',
   DIET_SEARCH_PRODUCTS = 'DIET_SEARCH_PRODUCTS',
+  NUTRITION_SEARCH = 'NUTRITION_SEARCH',
+  NUTRITION_LOOKUP = 'NUTRITION_LOOKUP',
 }
 
 /**
@@ -409,4 +411,43 @@ export interface DietHealthCheckResponse {
   status: string;
   version?: string;
   [key: string]: any;
+}
+
+// =====================================================
+// Open Diet Data (USDA FoodData Central) Types
+// =====================================================
+
+/**
+ * USDA FDC food nutrient data
+ */
+export interface USDANutrient {
+  nutrientId: number;
+  nutrientName: string;
+  nutrientNumber: string;
+  unitName: string;
+  value: number;
+}
+
+/**
+ * USDA FDC food search result
+ */
+export interface USDAFoodSearchResult {
+  fdcId: number;
+  description: string;
+  dataType: string;
+  brandOwner?: string;
+  ingredients?: string;
+  foodNutrients: USDANutrient[];
+  servingSize?: number;
+  servingSizeUnit?: string;
+}
+
+/**
+ * USDA FDC search API response
+ */
+export interface USDASearchResponse {
+  totalHits: number;
+  currentPage: number;
+  totalPages: number;
+  foods: USDAFoodSearchResult[];
 }

@@ -7,6 +7,7 @@
 
 import { IntegrationManager } from '@modules/integrations';
 import { DietApiClient } from '@modules/integrations/diet-api';
+import { OpenDietDataClient } from '@modules/integrations/open-diet-data';
 import { ConfigManager } from '@/config/config';
 import { CacheManager } from '@utils/storage';
 import type { ExtensionMessage, ExtensionResponse } from '@types';
@@ -17,6 +18,7 @@ import type { ExtensionMessage, ExtensionResponse } from '@types';
 class BackgroundService {
   private integrationManager = IntegrationManager.getInstance();
   private dietClient = DietApiClient.getInstance();
+  private nutritionClient = OpenDietDataClient.getInstance();
   private config = ConfigManager.getInstance();
 
   /**
@@ -124,6 +126,25 @@ class BackgroundService {
           {
             const searchResult = await this.dietClient.searchProducts(message.payload);
             sendResponse({ success: !!searchResult, data: searchResult });
+          }
+          break;
+
+        case 'NUTRITION_SEARCH':
+          {
+            const nutritionResults = await this.nutritionClient.searchFoods(
+              message.payload.query,
+              message.payload.pageSize || 5
+            );
+            sendResponse({ success: true, data: nutritionResults });
+          }
+          break;
+
+        case 'NUTRITION_LOOKUP':
+          {
+            const nutrition = await this.nutritionClient.getFoodNutrition(
+              message.payload.query
+            );
+            sendResponse({ success: true, data: nutrition });
           }
           break;
 
