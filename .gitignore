@@ -10,6 +10,8 @@ build/
 *.js.map
 !webpack.config.js
 !tailwind.config.js
+!scripts/*.js
+!config/*.js
 
 # TypeScript
 *.tsbuildinfo

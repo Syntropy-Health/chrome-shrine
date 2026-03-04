@@ -4,11 +4,12 @@
  * Tests for OpenDietDataClient nutrition data client
  */
 
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { OpenDietDataClient } from '../src/modules/integrations/open-diet-data';
 
 // Mock fetch for tests
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 describe('OpenDietDataClient', () => {
   let client: OpenDietDataClient;
