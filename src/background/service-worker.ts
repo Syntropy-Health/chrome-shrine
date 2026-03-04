@@ -7,6 +7,7 @@
 
 import { IntegrationManager } from '@modules/integrations';
 import { DietApiClient } from '@modules/integrations/diet-api';
+import { JournalApiClient } from '@modules/integrations/journal-api';
 import { OpenDietDataClient } from '@modules/integrations/open-diet-data';
 import { ConfigManager } from '@/config/config';
 import { CacheManager } from '@utils/storage';
@@ -18,6 +19,7 @@ import type { ExtensionMessage, ExtensionResponse } from '@types';
 class BackgroundService {
   private integrationManager = IntegrationManager.getInstance();
   private dietClient = DietApiClient.getInstance();
+  private journalClient = JournalApiClient.getInstance();
   private nutritionClient = OpenDietDataClient.getInstance();
   private config = ConfigManager.getInstance();
 
@@ -145,6 +147,59 @@ class BackgroundService {
               message.payload.query
             );
             sendResponse({ success: true, data: nutrition });
+          }
+          break;
+
+        case 'JOURNAL_GET_PROFILE':
+          {
+            const profile = await this.journalClient.getHealthProfile();
+            sendResponse({ success: !!profile, data: profile });
+          }
+          break;
+
+        case 'JOURNAL_LOG_FOOD':
+          {
+            const logResult = await this.journalClient.logFood(message.payload);
+            sendResponse({ success: !!logResult, data: logResult });
+          }
+          break;
+
+        case 'JOURNAL_EXCHANGE_KEY':
+          {
+            const exchangeResult = await this.journalClient.exchangeClerkTokenForApiKey(
+              message.payload.clerkUserId,
+              message.payload.email,
+              message.payload.name,
+            );
+            sendResponse({ success: !!exchangeResult, data: exchangeResult });
+          }
+          break;
+
+        case 'DIET_SCORE_FOOD':
+          {
+            const fitScore = await this.dietClient.scoreFoodFit(
+              message.payload.foodName,
+              message.payload.nutrition || null,
+              message.payload.userProfile || null,
+            );
+            sendResponse({ success: !!fitScore, data: fitScore });
+          }
+          break;
+
+        case 'OPEN_SIDE_PANEL':
+          {
+            // Open side panel and send product data to it
+            if (sender.tab?.windowId != null) {
+              await chrome.sidePanel.open({ windowId: sender.tab.windowId });
+              // Short delay to let the panel initialize before sending data
+              setTimeout(() => {
+                chrome.runtime.sendMessage({
+                  type: 'SIDE_PANEL_SHOW_PRODUCT',
+                  payload: message.payload,
+                });
+              }, 300);
+            }
+            sendResponse({ success: true });
           }
           break;
 

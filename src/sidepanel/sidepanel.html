@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Syntropy Food Insights</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #111827;
+      background: #f9fafb;
+    }
+
+    .panel-header {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panel-header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .panel-header .subtitle {
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    .panel-content {
+      padding: 16px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #6b7280;
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .empty-state h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Product Detail */
+    .product-detail {
+      display: none;
+    }
+
+    .product-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .product-brand {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    .detail-section {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .detail-section h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Score cards */
+    .scores-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .score-card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .score-card .score-value {
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .score-card .score-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .score-excellent { color: #16a34a; }
+    .score-good { color: #2563eb; }
+    .score-fair { color: #d97706; }
+    .score-poor { color: #dc2626; }
+
+    /* Concern list */
+    .concern-item {
+      padding: 12px;
+      border-left: 3px solid #dc2626;
+      background: #fef2f2;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .concern-item.high { border-color: #dc2626; background: #fef2f2; }
+    .concern-item.critical { border-color: #991b1b; background: #fef2f2; }
+    .concern-item.medium { border-color: #d97706; background: #fffbeb; }
+
+    .concern-item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #111827;
+    }
+
+    .concern-item p {
+      margin: 0;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    /* Insights list */
+    .insight-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .insight-item:last-child {
+      border-bottom: none;
+    }
+
+    .insight-category {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Journal button */
+    .journal-btn {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .journal-btn:hover {
+      background: #388E3C;
+    }
+
+    .journal-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    /* Loading */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 48px 24px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="panel-header">
+    <div>
+      <h1>Syntropy Food Insights</h1>
+      <div class="subtitle">Detailed Product Analysis</div>
+    </div>
+  </div>
+
+  <div class="panel-content">
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <div class="icon">&#x1F50D;</div>
+      <h2>No Product Selected</h2>
+      <p>Hover over a food product on any supported page and click "Open Details" to see a full analysis here.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading" id="loadingState">
+      <div class="spinner"></div>
+      <p>Loading analysis...</p>
+    </div>
+
+    <!-- Product Detail -->
+    <div class="product-detail" id="productDetail">
+      <h2 class="product-name" id="productName"></h2>
+      <p class="product-brand" id="productBrand"></p>
+
+      <!-- Macro / Nutrition Visual -->
+      <div class="detail-section" id="nutritionSection">
+        <h3>Nutrition</h3>
+        <div id="nutritionContent"></div>
+      </div>
+
+      <!-- Scores -->
+      <div class="scores-grid" id="scoresGrid">
+        <div class="score-card">
+          <div class="score-value" id="safetyScore">--</div>
+          <div class="score-label">Safety</div>
+        </div>
+        <div class="score-card">
+          <div class="score-value" id="healthScore">--</div>
+          <div class="score-label">Health</div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="detail-section">
+        <h3>Summary</h3>
+        <p id="summaryText"></p>
+      </div>
+
+      <!-- Concerns -->
+      <div class="detail-section" id="concernsSection">
+        <h3>Concerns</h3>
+        <div id="concernsList"></div>
+      </div>
+
+      <!-- Insights -->
+      <div class="detail-section" id="insightsSection">
+        <h3>Insights</h3>
+        <div id="insightsList"></div>
+      </div>
+
+      <!-- Journal -->
+      <button class="journal-btn" id="journalBtn">+ Add to Journal</button>
+    </div>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

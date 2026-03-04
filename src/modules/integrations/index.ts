@@ -206,4 +206,5 @@ export class IntegrationManager {
 // Export integrations for direct use if needed
 export { FDAIntegration, USDAIntegration };
 export { DietApiClient } from './diet-api';
+export { JournalApiClient } from './journal-api';
 export { OpenDietDataClient } from './open-diet-data';

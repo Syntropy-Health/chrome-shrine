@@ -16,6 +16,10 @@ import type {
   DietSearchResponse,
   DietSymptomReportRequest,
   DietSymptomReportResponse,
+  JournalHealthProfile,
+  NutritionInfo,
+  PersonalFitScore,
+  MacroFitStatus,
 } from '@types';
 
 /** Base path for all DIET API v1 routes */
@@ -123,6 +127,125 @@ export class DietApiClient {
       console.error('[DIET Integration] Product search failed:', error);
       return null;
     }
+  }
+
+  /**
+   * Score how well a food fits the user's dietary profile.
+   *
+   * Attempts the DIET ``/score-food`` endpoint first. Falls back to a
+   * client-side heuristic that compares macros against the health profile.
+   */
+  async scoreFoodFit(
+    foodName: string,
+    nutrition: NutritionInfo | null,
+    userProfile: JournalHealthProfile | null,
+  ): Promise<PersonalFitScore | null> {
+    // Need at least a profile to score against
+    if (!userProfile) return null;
+
+    try {
+      const userId = this.getUserId();
+      if (!userId) return null;
+
+      const body = {
+        user_id: userId,
+        food_name: foodName,
+        nutrition,
+        user_profile: userProfile,
+      };
+
+      return await this.request<PersonalFitScore>(
+        `${DIET_API_PREFIX}/score-food`,
+        { method: 'POST', body: JSON.stringify(body) },
+      );
+    } catch {
+      // DIET /score-food not available — use client-side heuristic
+      return this.computeClientSideFitScore(foodName, nutrition, userProfile);
+    }
+  }
+
+  /**
+   * Client-side heuristic for food-fit scoring when DIET endpoint is unavailable.
+   * Compares food macros against health profile goals/preferences/allergies.
+   */
+  private computeClientSideFitScore(
+    foodName: string,
+    nutrition: NutritionInfo | null,
+    profile: JournalHealthProfile,
+  ): PersonalFitScore {
+    let score = 7; // Start optimistic
+    const warnings: string[] = [];
+    const macroFit = {
+      protein: 'on_track' as MacroFitStatus,
+      carbs: 'on_track' as MacroFitStatus,
+      fat: 'on_track' as MacroFitStatus,
+      calories: 'on_track' as MacroFitStatus,
+    };
+
+    const nameLower = foodName.toLowerCase();
+
+    // Check allergies
+    for (const allergy of profile.allergies) {
+      if (nameLower.includes(allergy.toLowerCase())) {
+        score -= 4;
+        warnings.push(`Contains allergen: ${allergy}`);
+      }
+    }
+
+    // Check dietary preferences
+    const prefs = profile.dietary_preferences;
+    if (prefs.diet_type === 'vegan' && /meat|beef|chicken|pork|fish|dairy|egg/i.test(nameLower)) {
+      score -= 3;
+      warnings.push('May not be vegan-friendly');
+    }
+    if (prefs.diet_type === 'vegetarian' && /meat|beef|chicken|pork|fish/i.test(nameLower)) {
+      score -= 3;
+      warnings.push('May not be vegetarian-friendly');
+    }
+
+    // Macro evaluation if nutrition data available
+    if (nutrition) {
+      const proteinG = parseFloat(nutrition.protein || '0');
+      const carbsG = parseFloat(nutrition.totalCarbohydrates || '0');
+      const fatG = parseFloat(nutrition.totalFat || '0');
+      const cal = nutrition.calories || 0;
+
+      // High protein is generally positive for health goals
+      if (proteinG > 20) { score += 1; macroFit.protein = 'on_track'; }
+      else if (proteinG < 5) { macroFit.protein = 'under'; }
+
+      // Very high sugar/carbs may reduce score
+      if (carbsG > 50) { score -= 1; macroFit.carbs = 'over'; }
+      if (fatG > 30) { score -= 1; macroFit.fat = 'over'; }
+      if (cal > 500) { macroFit.calories = 'over'; }
+    }
+
+    // Goal matching
+    for (const goal of profile.health_goals) {
+      const goalLower = goal.toLowerCase();
+      if (goalLower.includes('protein') && nutrition && parseFloat(nutrition.protein || '0') > 15) {
+        score += 1;
+      }
+      if (goalLower.includes('low carb') && nutrition && parseFloat(nutrition.totalCarbohydrates || '0') < 10) {
+        score += 1;
+      }
+    }
+
+    // Clamp score
+    score = Math.max(0, Math.min(10, score));
+
+    const label = score >= 8 ? 'Excellent Fit'
+      : score >= 6 ? 'Good Fit'
+        : score >= 4 ? 'Fair'
+          : 'Poor Fit';
+
+    const recommendation = warnings.length > 0
+      ? warnings[0]
+      : score >= 7
+        ? 'Good match for your dietary profile'
+        : 'Review this product against your health goals';
+
+    return { score, label, recommendation, macroFit, warnings };
   }
 
   /**

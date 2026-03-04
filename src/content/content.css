@@ -298,3 +298,232 @@
 .syntropy-card-content::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* =====================================================
+   Visual Nutrition Components
+   ===================================================== */
+
+/* Macro Row (donut + summary side by side) */
+.syntropy-macro-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+/* Macro Donut Chart */
+.syntropy-macro-donut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.syntropy-macro-donut .donut-ring {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.syntropy-macro-donut .donut-empty {
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.syntropy-macro-donut .donut-legend {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.syntropy-macro-donut .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.syntropy-macro-donut .legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Macro Summary */
+.syntropy-macro-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+}
+
+.syntropy-macro-summary .macro-item {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.syntropy-macro-summary .macro-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.syntropy-macro-summary .macro-label {
+  font-size: 10px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.syntropy-macro-summary .macro-item.protein .macro-value { color: #4CAF50; }
+.syntropy-macro-summary .macro-item.carbs .macro-value { color: #FF9800; }
+.syntropy-macro-summary .macro-item.fat .macro-value { color: #F44336; }
+
+/* Fit Gauge */
+.syntropy-fit-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.syntropy-fit-gauge .gauge-svg {
+  display: block;
+}
+
+.syntropy-fit-gauge .gauge-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Nutrient Bar */
+.syntropy-nutrient-bar {
+  margin-bottom: 8px;
+}
+
+.syntropy-nutrient-bar .nutrient-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.syntropy-nutrient-bar .nutrient-name {
+  color: #374151;
+}
+
+.syntropy-nutrient-bar .nutrient-value {
+  color: #111827;
+  font-weight: 600;
+}
+
+.syntropy-nutrient-bar .nutrient-track {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.syntropy-nutrient-bar .nutrient-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.syntropy-nutrient-bar .nutrient-dv {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* Recommendation Banner */
+.syntropy-recommendation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.syntropy-recommendation.positive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.syntropy-recommendation.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.syntropy-recommendation.neutral {
+  background: #f0f9ff;
+  color: #1e40af;
+}
+
+.syntropy-recommendation .rec-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.syntropy-recommendation.positive .rec-icon { background: #86efac; color: #166534; }
+.syntropy-recommendation.warning .rec-icon { background: #fde68a; color: #92400e; }
+.syntropy-recommendation.neutral .rec-icon { background: #bfdbfe; color: #1e40af; }
+
+.syntropy-recommendation .rec-text {
+  line-height: 1.3;
+}
+
+/* Source Badge */
+.syntropy-source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* Journal Button */
+.syntropy-journal-btn {
+  padding: 6px 12px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.syntropy-journal-btn:hover {
+  background: #388E3C;
+}
+
+/* Footer update for multiple buttons */
+.syntropy-card-footer {
+  gap: 8px;
+  align-items: center;
+}

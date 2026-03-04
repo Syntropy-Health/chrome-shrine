@@ -43,6 +43,7 @@ export const API_ENDPOINTS = {
   USDA_RECALLS: 'https://www.fsis.usda.gov/fsis/api/recall',
   DIET_API: process.env.DIET_API_URL || 'http://localhost:8000',
   USDA_FDC: 'https://api.nal.usda.gov/fdc/v1',
+  JOURNAL_API: process.env.JOURNAL_API_URL || 'http://localhost:3000',
 } as const;
 
 /**

@@ -8,7 +8,7 @@
  */
 
 import { createElement } from '@utils/dom-utils';
-import type { SafetyConcern, FoodRecall } from '@types';
+import type { SafetyConcern, FoodRecall, NutritionInfo, PersonalFitScore } from '@types';
 
 /**
  * Create a safety concern card
@@ -309,6 +309,201 @@ export function createCollapsible(
   collapsible.appendChild(contentEl);
 
   return collapsible;
+}
+
+// =====================================================
+// Visual Nutrition Components
+// =====================================================
+
+/**
+ * Create a macro donut chart using CSS conic-gradient
+ * @param nutrition - Nutrition data
+ * @param size - Diameter in pixels
+ * @returns Donut chart element
+ */
+export function createMacroDonut(nutrition: NutritionInfo, size: number): HTMLElement {
+  const proteinG = parseFloat(nutrition.protein || '0');
+  const carbsG = parseFloat(nutrition.totalCarbohydrates || '0');
+  const fatG = parseFloat(nutrition.totalFat || '0');
+  const total = proteinG + carbsG + fatG;
+
+  const container = createElement('div', { class: 'syntropy-macro-donut' });
+
+  if (total === 0) {
+    container.innerHTML = `<div class="donut-empty" style="width:${size}px;height:${size}px;">No data</div>`;
+    return container;
+  }
+
+  const pPct = (proteinG / total) * 100;
+  const cPct = (carbsG / total) * 100;
+  const fPct = (fatG / total) * 100;
+
+  const pEnd = pPct;
+  const cEnd = pEnd + cPct;
+
+  const donut = createElement('div', { class: 'donut-ring' });
+  donut.style.cssText = `
+    width: ${size}px; height: ${size}px; border-radius: 50%;
+    background: conic-gradient(
+      #4CAF50 0% ${pEnd}%,
+      #FF9800 ${pEnd}% ${cEnd}%,
+      #F44336 ${cEnd}% 100%
+    );
+    position: relative; display: flex; align-items: center; justify-content: center;
+  `;
+
+  const hole = createElement('div', { class: 'donut-hole' });
+  const holeSize = Math.round(size * 0.6);
+  hole.style.cssText = `
+    width: ${holeSize}px; height: ${holeSize}px; border-radius: 50%;
+    background: white; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  `;
+  hole.innerHTML = `
+    <span style="font-size:${Math.round(size * 0.13)}px;font-weight:700;color:#111827;">
+      ${nutrition.calories || 0}
+    </span>
+    <span style="font-size:${Math.round(size * 0.08)}px;color:#6b7280;">kcal</span>
+  `;
+
+  donut.appendChild(hole);
+  container.appendChild(donut);
+
+  // Legend
+  const legend = createElement('div', { class: 'donut-legend' });
+  legend.innerHTML = `
+    <span class="legend-item"><span class="legend-dot" style="background:#4CAF50;"></span>P ${proteinG.toFixed(0)}g (${pPct.toFixed(0)}%)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#FF9800;"></span>C ${carbsG.toFixed(0)}g (${cPct.toFixed(0)}%)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#F44336;"></span>F ${fatG.toFixed(0)}g (${fPct.toFixed(0)}%)</span>
+  `;
+  container.appendChild(legend);
+
+  return container;
+}
+
+/**
+ * Create a fit score gauge using SVG
+ * @param score - Score 0-10
+ * @param label - Label text
+ * @returns Gauge element
+ */
+export function createFitGauge(score: number, label: string): HTMLElement {
+  const container = createElement('div', { class: 'syntropy-fit-gauge' });
+
+  const color = score >= 8 ? '#4CAF50'
+    : score >= 6 ? '#8BC34A'
+      : score >= 4 ? '#FF9800'
+        : '#F44336';
+
+  const pct = (score / 10) * 100;
+
+  container.innerHTML = `
+    <svg viewBox="0 0 60 60" width="60" height="60" class="gauge-svg">
+      <circle cx="30" cy="30" r="26" fill="none" stroke="#e5e7eb" stroke-width="5" />
+      <circle cx="30" cy="30" r="26" fill="none" stroke="${color}" stroke-width="5"
+        stroke-dasharray="${pct * 1.634} 163.4"
+        stroke-dashoffset="0" stroke-linecap="round"
+        transform="rotate(-90 30 30)" />
+      <text x="30" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="${color}">
+        ${score.toFixed(1)}
+      </text>
+    </svg>
+    <span class="gauge-label" style="color:${color};">${label}</span>
+  `;
+
+  return container;
+}
+
+/**
+ * Create a horizontal nutrient bar with optional DV%
+ * @param name - Nutrient name
+ * @param value - Display value (e.g. "25g")
+ * @param dvPercent - Daily value percentage (optional)
+ * @returns Bar element
+ */
+export function createNutrientBar(name: string, value: string, dvPercent?: number): HTMLElement {
+  const bar = createElement('div', { class: 'syntropy-nutrient-bar' });
+
+  const barWidth = dvPercent !== undefined ? Math.min(dvPercent, 100) : 0;
+  const barColor = dvPercent !== undefined && dvPercent > 100 ? '#F44336'
+    : dvPercent !== undefined && dvPercent > 50 ? '#FF9800'
+      : '#4CAF50';
+
+  bar.innerHTML = `
+    <div class="nutrient-row">
+      <span class="nutrient-name">${name}</span>
+      <span class="nutrient-value">${value}</span>
+    </div>
+    ${dvPercent !== undefined ? `
+      <div class="nutrient-track">
+        <div class="nutrient-fill" style="width:${barWidth}%;background:${barColor};"></div>
+      </div>
+      <span class="nutrient-dv">${dvPercent}% DV</span>
+    ` : ''}
+  `;
+
+  return bar;
+}
+
+/**
+ * Create a compact macro summary row for hover card
+ * @param nutrition - Nutrition data
+ * @returns Summary element
+ */
+export function createMacroSummary(nutrition: NutritionInfo): HTMLElement {
+  const summary = createElement('div', { class: 'syntropy-macro-summary' });
+
+  summary.innerHTML = `
+    <div class="macro-item">
+      <span class="macro-value">${nutrition.calories || 0}</span>
+      <span class="macro-label">kcal</span>
+    </div>
+    <div class="macro-item protein">
+      <span class="macro-value">${nutrition.protein || '0g'}</span>
+      <span class="macro-label">Protein</span>
+    </div>
+    <div class="macro-item carbs">
+      <span class="macro-value">${nutrition.totalCarbohydrates || '0g'}</span>
+      <span class="macro-label">Carbs</span>
+    </div>
+    <div class="macro-item fat">
+      <span class="macro-value">${nutrition.totalFat || '0g'}</span>
+      <span class="macro-label">Fat</span>
+    </div>
+  `;
+
+  return summary;
+}
+
+/**
+ * Create a recommendation banner
+ * @param text - Recommendation text
+ * @param type - Banner type
+ * @returns Banner element
+ */
+export function createRecommendationBanner(
+  text: string,
+  type: 'positive' | 'warning' | 'neutral' = 'neutral'
+): HTMLElement {
+  const banner = createElement('div', {
+    class: `syntropy-recommendation ${type}`,
+  });
+
+  const icon = type === 'positive' ? '✓' : type === 'warning' ? '!' : 'i';
+  banner.innerHTML = `<span class="rec-icon">${icon}</span><span class="rec-text">${text}</span>`;
+
+  return banner;
+}
+
+/**
+ * Create a data source badge
+ * @param source - Source name
+ * @returns Badge element
+ */
+export function createSourceBadge(source: string): HTMLElement {
+  return createElement('span', {
+    class: 'syntropy-source-badge',
+  }, [`Source: ${source}`]);
 }
 
 // Helper functions
