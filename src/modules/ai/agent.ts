@@ -11,7 +11,10 @@
 import { ConfigManager } from '@/config/config';
 import { openai } from '@ai-sdk/openai';
 import { IntegrationManager } from '@modules/integrations';
-import type { AIAnalysis, ExtensionConfig, FoodProduct } from '@types';
+import { DietApiClient } from '@modules/integrations/diet-api';
+import { JournalApiClient } from '@modules/integrations/journal-api';
+import { OpenDietDataClient } from '@modules/integrations/open-diet-data';
+import type { AIAnalysis, ExtensionConfig, FoodProduct, JournalHealthProfile, NutritionInfo, PersonalFitScore } from '@types';
 import { CacheManager } from '@utils/storage';
 import { generateObject } from 'ai';
 import { ImageProcessor } from './image-processor';
@@ -25,6 +28,9 @@ export class FoodAnalysisAgent {
   private static instance: FoodAnalysisAgent;
   private imageProcessor = ImageProcessor.getInstance();
   private integrationManager = IntegrationManager.getInstance();
+  private nutritionClient = OpenDietDataClient.getInstance();
+  private dietClient = DietApiClient.getInstance();
+  private journalClient = JournalApiClient.getInstance();
   private config = ConfigManager.getInstance();
 
   private constructor() { }
@@ -104,17 +110,32 @@ export class FoodAnalysisAgent {
         }
       }
 
-      // Check for recalls
-      let recalls = [];
-      if (includeRecalls) {
-        recalls = await this.integrationManager.checkProduct(
-          product.name,
-          product.brand
-        );
+      // Fetch recalls, real nutrition data, and user profile in parallel
+      const [recallsResult, usdaNutritionResult, profileResult] = await Promise.allSettled([
+        includeRecalls
+          ? this.integrationManager.checkProduct(product.name, product.brand)
+          : Promise.resolve([]),
+        this.fetchNutritionData(product.name),
+        this.journalClient.getHealthProfile(),
+      ]);
+
+      const recalls = recallsResult.status === 'fulfilled' ? recallsResult.value : [];
+      const usdaNutrition = usdaNutritionResult.status === 'fulfilled' ? usdaNutritionResult.value : null;
+      const userProfile = profileResult.status === 'fulfilled' ? profileResult.value : null;
+
+      // Enrich product with real USDA nutrition data when available
+      if (usdaNutrition) {
+        product.nutrition = {
+          ...product.nutrition,
+          ...usdaNutrition,
+        };
       }
 
-      // Generate AI analysis
-      const aiAnalysis = await this.generateAnalysis(product, config);
+      // Generate AI analysis and fit scoring in parallel
+      const [aiAnalysis, fitScore] = await Promise.all([
+        this.generateAnalysis(product, config),
+        this.computeFitScore(product.name, product.nutrition || null, userProfile),
+      ]);
 
       // Build complete analysis
       const analysis: AIAnalysis = {
@@ -154,7 +175,18 @@ export class FoodAnalysisAgent {
           processingTime: Date.now() - startTime,
           confidence: imageAnalysis?.confidence || 0.9,
         },
+        fitScore: fitScore || undefined,
+        nutritionSource: usdaNutrition ? 'USDA_FDC' : 'AI_ESTIMATED',
       };
+
+      // Add note when nutrition data is sourced from USDA FoodData Central
+      if (usdaNutrition) {
+        analysis.insights.push({
+          category: 'Nutrition Source',
+          text: 'Nutrition data sourced from USDA FoodData Central for accuracy.',
+          importance: 'medium',
+        });
+      }
 
       // Cache the analysis
       await CacheManager.setAnalysis(product.id, analysis);
@@ -292,6 +324,39 @@ Product: ${product.name}`;
 Be thorough but concise. Focus on actionable insights.`;
 
     return prompt;
+  }
+
+  /**
+   * Compute personalized fit score via DIET API or client-side heuristic
+   * Non-blocking — returns null on any failure
+   */
+  private async computeFitScore(
+    foodName: string,
+    nutrition: NutritionInfo | null,
+    profile: JournalHealthProfile | null,
+  ): Promise<PersonalFitScore | null> {
+    if (!profile) return null;
+    try {
+      return await this.dietClient.scoreFoodFit(foodName, nutrition, profile);
+    } catch (error) {
+      console.error('[FoodAnalysisAgent] Fit score computation failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch real nutrition data from USDA FoodData Central
+   * Non-blocking — returns null on any failure to allow AI fallback
+   * @param productName - Product name to look up
+   * @returns NutritionInfo or null
+   */
+  private async fetchNutritionData(productName: string): Promise<NutritionInfo | null> {
+    try {
+      return await this.nutritionClient.getFoodNutrition(productName);
+    } catch (error) {
+      console.error('[FoodAnalysisAgent] USDA nutrition fetch failed:', error);
+      return null;
+    }
   }
 
   /**

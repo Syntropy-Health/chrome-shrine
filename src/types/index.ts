@@ -186,6 +186,10 @@ export interface AIAnalysis {
     processingTime: number;
     confidence: number;
   };
+  /** Personalized fit score from DIET / client-side heuristic */
+  fitScore?: PersonalFitScore;
+  /** Where nutrition data came from */
+  nutritionSource?: 'USDA_FDC' | 'AI_ESTIMATED' | 'SCRAPED';
 }
 
 /**
@@ -271,6 +275,13 @@ export enum MessageType {
   DIET_HEALTH_CHECK = 'DIET_HEALTH_CHECK',
   DIET_REPORT_SYMPTOMS = 'DIET_REPORT_SYMPTOMS',
   DIET_SEARCH_PRODUCTS = 'DIET_SEARCH_PRODUCTS',
+  NUTRITION_SEARCH = 'NUTRITION_SEARCH',
+  NUTRITION_LOOKUP = 'NUTRITION_LOOKUP',
+  JOURNAL_GET_PROFILE = 'JOURNAL_GET_PROFILE',
+  JOURNAL_LOG_FOOD = 'JOURNAL_LOG_FOOD',
+  JOURNAL_EXCHANGE_KEY = 'JOURNAL_EXCHANGE_KEY',
+  DIET_SCORE_FOOD = 'DIET_SCORE_FOOD',
+  OPEN_SIDE_PANEL = 'OPEN_SIDE_PANEL',
 }
 
 /**
@@ -409,4 +420,103 @@ export interface DietHealthCheckResponse {
   status: string;
   version?: string;
   [key: string]: any;
+}
+
+// =====================================================
+// Open Diet Data (USDA FoodData Central) Types
+// =====================================================
+
+/**
+ * USDA FDC food nutrient data
+ */
+export interface USDANutrient {
+  nutrientId: number;
+  nutrientName: string;
+  nutrientNumber: string;
+  unitName: string;
+  value: number;
+}
+
+/**
+ * USDA FDC food search result
+ */
+export interface USDAFoodSearchResult {
+  fdcId: number;
+  description: string;
+  dataType: string;
+  brandOwner?: string;
+  ingredients?: string;
+  foodNutrients: USDANutrient[];
+  servingSize?: number;
+  servingSizeUnit?: string;
+}
+
+/**
+ * USDA FDC search API response
+ */
+export interface USDASearchResponse {
+  totalHits: number;
+  currentPage: number;
+  totalPages: number;
+  foods: USDAFoodSearchResult[];
+}
+
+// =====================================================
+// Journal API Types
+// =====================================================
+
+/**
+ * Health profile data from Syntropy-Journals
+ */
+export interface JournalHealthProfile {
+  dietary_preferences: Record<string, any>;
+  supplement_stack: string[];
+  health_goals: string[];
+  conditions: string[];
+  allergies: string[];
+  metrics_data?: Record<string, any>;
+}
+
+/**
+ * Request body for logging food from the extension
+ */
+export interface JournalFoodLogRequest {
+  food_name: string;
+  meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'supplement';
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  source_url?: string;
+  notes?: string;
+}
+
+// =====================================================
+// Personalized Fit Scoring Types
+// =====================================================
+
+/**
+ * Macro tracking status relative to user goals
+ */
+export type MacroFitStatus = 'over' | 'on_track' | 'under';
+
+/**
+ * Personalized food fit score from DIET or client-side heuristic
+ */
+export interface PersonalFitScore {
+  /** Score from 0 (poor) to 10 (excellent) */
+  score: number;
+  /** Human-readable label */
+  label: string;
+  /** One-line actionable recommendation */
+  recommendation: string;
+  /** Per-macro fit assessment */
+  macroFit: {
+    protein: MacroFitStatus;
+    carbs: MacroFitStatus;
+    fat: MacroFitStatus;
+    calories: MacroFitStatus;
+  };
+  /** Warnings (allergen matches, condition conflicts) */
+  warnings: string[];
 }

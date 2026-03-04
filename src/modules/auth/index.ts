@@ -8,6 +8,7 @@
  */
 
 import { AUTH_CONFIG } from './config';
+import { JournalApiClient } from '@modules/integrations/journal-api';
 
 /**
  * User information from Clerk
@@ -39,6 +40,7 @@ const AUTH_STORAGE_KEYS = {
     USER: 'syntropy_auth_user',
     TOKEN: 'syntropy_auth_token',
     SESSION: 'syntropy_auth_session',
+    JOURNAL_API_KEY: 'syntropy_journal_api_key',
 } as const;
 
 /**
@@ -138,6 +140,12 @@ export class AuthManager {
             this.state.isLoading = false;
 
             console.log('[AuthManager] Sign in successful:', user.email);
+
+            // Bridge: exchange Clerk identity for Journal API key (non-blocking)
+            this.exchangeJournalApiKey(user).catch((err) => {
+                console.warn('[AuthManager] Journal API key exchange failed (non-critical):', err);
+            });
+
             return this.getState();
         } catch (error) {
             console.error('[AuthManager] Sign in error:', error);
@@ -152,12 +160,16 @@ export class AuthManager {
      */
     async signOut(): Promise<void> {
         try {
-            // Clear stored data
+            // Clear stored data including Journal API key
             await chrome.storage.local.remove([
                 AUTH_STORAGE_KEYS.USER,
                 AUTH_STORAGE_KEYS.TOKEN,
                 AUTH_STORAGE_KEYS.SESSION,
+                AUTH_STORAGE_KEYS.JOURNAL_API_KEY,
             ]);
+
+            // Clear the Journal client's cached key
+            await JournalApiClient.getInstance().clearApiKey();
 
             // Reset state
             this.state = {
@@ -200,6 +212,23 @@ export class AuthManager {
      */
     isAuthenticated(): boolean {
         return this.state.isAuthenticated;
+    }
+
+    /**
+     * Exchange Clerk identity for a Journal sh_* API key
+     */
+    private async exchangeJournalApiKey(user: ClerkUser): Promise<void> {
+        const journalClient = JournalApiClient.getInstance();
+        const apiKey = await journalClient.exchangeClerkTokenForApiKey(
+            user.id,
+            user.email,
+            user.firstName,
+            user.lastName,
+            user.imageUrl,
+        );
+        if (apiKey) {
+            console.log('[AuthManager] Journal API key obtained');
+        }
     }
 
     /**

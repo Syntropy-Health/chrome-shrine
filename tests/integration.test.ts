@@ -1,18 +1,23 @@
 /**
  * Integration Module Tests
  *
- * Tests for FDA and USDA recall integrations
+ * Tests for FDA and USDA recall integrations (mocked fetch for CI)
  */
 
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { FDAIntegration } from '../src/modules/integrations/fda-recalls';
 import { USDAIntegration } from '../src/modules/integrations/usda-recalls';
 import { IntegrationManager } from '../src/modules/integrations';
+
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 describe('FDAIntegration', () => {
   let integration: FDAIntegration;
 
   beforeEach(() => {
     integration = new FDAIntegration();
+    mockFetch.mockClear();
   });
 
   test('should have correct name and configuration', () => {
@@ -20,32 +25,48 @@ describe('FDAIntegration', () => {
   });
 
   test('should fetch recent recalls', async () => {
-    // This is a real API call - may fail if API is down
-    try {
-      const recalls = await integration.getRecentRecalls(5);
-      expect(Array.isArray(recalls)).toBe(true);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        results: [
+          {
+            recall_number: 'F-001',
+            product_description: 'Chicken nuggets',
+            recalling_firm: 'FoodCo',
+            reason_for_recall: 'Possible contamination',
+            classification: 'Class I',
+            recall_initiation_date: '20240101',
+          },
+        ],
+      }),
+    });
 
-      if (recalls.length > 0) {
-        const recall = recalls[0];
-        expect(recall).toHaveProperty('id');
-        expect(recall).toHaveProperty('productName');
-        expect(recall).toHaveProperty('company');
-        expect(recall).toHaveProperty('source');
-        expect(recall.source).toBe('FDA');
-      }
-    } catch (error) {
-      console.warn('FDA API test skipped (API unavailable):', error);
+    const recalls = await integration.getRecentRecalls(5);
+    expect(Array.isArray(recalls)).toBe(true);
+    if (recalls.length > 0) {
+      expect(recalls[0]).toHaveProperty('id');
+      expect(recalls[0]).toHaveProperty('productName');
+      expect(recalls[0].source).toBe('FDA');
     }
-  }, 10000); // 10 second timeout for API call
+  });
 
   test('should handle search queries', async () => {
-    try {
-      const recalls = await integration.searchRecalls('chicken');
-      expect(Array.isArray(recalls)).toBe(true);
-    } catch (error) {
-      console.warn('FDA search test skipped (API unavailable):', error);
-    }
-  }, 10000);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ results: [] }),
+    });
+
+    const recalls = await integration.searchRecalls('chicken');
+    expect(Array.isArray(recalls)).toBe(true);
+  });
+
+  test('should handle API errors gracefully', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+    const recalls = await integration.getRecentRecalls(5);
+    expect(Array.isArray(recalls)).toBe(true);
+    expect(recalls).toEqual([]);
+  });
 });
 
 describe('USDAIntegration', () => {
@@ -53,6 +74,7 @@ describe('USDAIntegration', () => {
 
   beforeEach(() => {
     integration = new USDAIntegration();
+    mockFetch.mockClear();
   });
 
   test('should have correct name and configuration', () => {
@@ -60,73 +82,45 @@ describe('USDAIntegration', () => {
   });
 
   test('should handle errors gracefully', async () => {
-    // USDA API may not be available or may have different structure
+    mockFetch.mockRejectedValueOnce(new Error('API unavailable'));
     const recalls = await integration.getRecentRecalls(5);
     expect(Array.isArray(recalls)).toBe(true);
-  }, 10000);
+  });
 });
 
 describe('IntegrationManager', () => {
   let manager: IntegrationManager;
 
   beforeEach(() => {
+    (IntegrationManager as any).instance = null;
     manager = IntegrationManager.getInstance();
+    mockFetch.mockClear();
+  });
+
+  test('should return singleton instance', () => {
+    const a = IntegrationManager.getInstance();
+    const b = IntegrationManager.getInstance();
+    expect(a).toBe(b);
   });
 
   test('should combine results from multiple sources', async () => {
-    try {
-      const recalls = await manager.getRecentRecalls(10, false);
-      expect(Array.isArray(recalls)).toBe(true);
+    // Both FDA and USDA will return empty/error — that's fine
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [] }),
+    });
 
-      // Check for both sources
-      const sources = new Set(recalls.map(r => r.source));
-      console.log('Recall sources found:', Array.from(sources));
-    } catch (error) {
-      console.warn('Integration manager test skipped:', error);
-    }
-  }, 15000);
+    const recalls = await manager.getRecentRecalls(10, false);
+    expect(Array.isArray(recalls)).toBe(true);
+  });
 
   test('should check product for recalls', async () => {
-    try {
-      const recalls = await manager.checkProduct('chicken', 'Tyson');
-      expect(Array.isArray(recalls)).toBe(true);
-      console.log(`Found ${recalls.length} recalls for chicken products`);
-    } catch (error) {
-      console.warn('Product check test skipped:', error);
-    }
-  }, 15000);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [] }),
+    });
+
+    const recalls = await manager.checkProduct('chicken', 'Tyson');
+    expect(Array.isArray(recalls)).toBe(true);
+  });
 });
-
-/**
- * Manual test runner for browser environment
- */
-export async function runManualIntegrationTests() {
-  console.log('🧪 Running Manual Integration Tests...\n');
-
-  const manager = IntegrationManager.getInstance();
-
-  // Test 1: Fetch recent recalls
-  console.log('Test 1: Fetching Recent Recalls');
-  try {
-    const recalls = await manager.getRecentRecalls(10);
-    console.log(`✓ Found ${recalls.length} recent recalls`);
-
-    if (recalls.length > 0) {
-      console.log('\nFirst recall:');
-      console.log(JSON.stringify(recalls[0], null, 2));
-    }
-  } catch (error) {
-    console.error('✗ Failed to fetch recalls:', error);
-  }
-
-  // Test 2: Search for specific product
-  console.log('\nTest 2: Searching for "chicken" recalls');
-  try {
-    const recalls = await manager.searchRecalls('chicken');
-    console.log(`✓ Found ${recalls.length} matching recalls`);
-  } catch (error) {
-    console.error('✗ Search failed:', error);
-  }
-
-  console.log('\n✅ Manual integration tests complete!');
-}

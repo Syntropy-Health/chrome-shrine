@@ -123,11 +123,10 @@ DIET API call from extension (auth via Clerk token), Open Diet Data macro lookup
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
-| 1 | Auth bridge | Clerk auth from extension to DIET service | in-progress | - | PRD-02 (DIET stable) | [plan](../plans/09-chrome-shrine-diet-integration.plan.md) |
-| 2 | Open Diet Data integration | Macro lookup module in extension | pending | with 1 | PRD-01 (macro calc) | - |
-| 3 | DIET scoring integration | Personalized food scoring from DIET | pending | - | 1 | - |
-| 4 | Hover-card redesign | Updated UI with macros + score + recommendation | pending | - | 2, 3 | - |
-| 5 | Caching & performance | IndexedDB cache, pre-fetching, skeleton states | pending | - | 4 | - |
+| 1 | Auth bridge | Clerk auth from extension to DIET service | complete | - | PRD-02 (DIET stable) | [plan](../plans/completed/09-chrome-shrine-diet-integration.plan.md) |
+| 2 | Open Diet Data integration | Macro lookup module in extension | complete | with 1 | PRD-01 (macro calc) | [plan](../plans/completed/09-open-diet-data.plan.md) |
+| 3 | DIET scoring + Journal integration + Visual overhaul | Personalized scoring, Journal API bridge, hover-card redesign, side panel | complete | - | 1, 2 | [plan](../plans/completed/chrome-shrine-visual-food-analysis.plan.md) |
+| 4 | Caching & performance | IndexedDB cache, pre-fetching, skeleton states | pending | - | 3 | - |
 
 ### Phase Details
 

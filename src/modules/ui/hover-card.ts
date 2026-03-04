@@ -7,9 +7,16 @@
  * @module ui/hover-card
  */
 
-import type { FoodProduct, AIAnalysis } from '@types';
+import type { FoodProduct, AIAnalysis, PersonalFitScore } from '@types';
 import { UI_CONFIG } from '@/config/config';
 import { createElement } from '@utils/dom-utils';
+import {
+  createMacroDonut,
+  createFitGauge,
+  createMacroSummary,
+  createRecommendationBanner,
+  createSourceBadge,
+} from './components';
 
 /**
  * Hover card manager
@@ -75,7 +82,20 @@ export class HoverCard {
 
     const contentEl = this.card.querySelector('.syntropy-card-content');
     if (contentEl) {
-      contentEl.innerHTML = this.buildAnalysisContent(analysis);
+      contentEl.innerHTML = '';
+      contentEl.appendChild(this.buildAnalysisContentElement(analysis));
+    }
+
+    // Update header with fit gauge if available
+    if (analysis.fitScore) {
+      const headerEl = this.card.querySelector('.syntropy-card-header');
+      const existingBadge = headerEl?.querySelector('.syntropy-score-badge');
+      if (existingBadge) existingBadge.remove();
+      const existingGauge = headerEl?.querySelector('.syntropy-fit-gauge');
+      if (existingGauge) existingGauge.remove();
+      headerEl?.appendChild(
+        createFitGauge(analysis.fitScore.score, analysis.fitScore.label)
+      );
     }
   }
 
@@ -154,8 +174,12 @@ export class HoverCard {
       header.appendChild(brand);
     }
 
-    // Add score badge if analysis available
-    if (analysis) {
+    // Add fit gauge or score badge
+    if (analysis?.fitScore) {
+      header.appendChild(
+        createFitGauge(analysis.fitScore.score, analysis.fitScore.label)
+      );
+    } else if (analysis) {
       const score = (analysis.safetyScore + analysis.healthScore) / 2;
       const badge = this.createScoreBadge(score);
       header.appendChild(badge);
@@ -165,20 +189,33 @@ export class HoverCard {
   }
 
   /**
-   * Build analysis content
+   * Build analysis content with visual components
    * @param analysis - AI analysis
-   * @returns HTML content
+   * @returns Content element
    */
-  private buildAnalysisContent(analysis: AIAnalysis): string {
-    const criticalConcerns = analysis.concerns.filter(
-      (c) => c.severity === 'critical' || c.severity === 'high'
-    );
+  private buildAnalysisContentElement(analysis: AIAnalysis): HTMLElement {
+    const wrapper = createElement('div', { class: 'syntropy-analysis-visual' });
 
-    let html = `
-      <div class="syntropy-summary">
-        <p>${analysis.summary}</p>
-      </div>
+    // --- Macro donut + summary row ---
+    if (analysis.nutritionSource && this.currentProduct?.nutrition) {
+      const macroRow = createElement('div', { class: 'syntropy-macro-row' });
+      macroRow.appendChild(createMacroDonut(this.currentProduct.nutrition, 100));
+      macroRow.appendChild(createMacroSummary(this.currentProduct.nutrition));
+      wrapper.appendChild(macroRow);
+    }
 
+    // --- Recommendation banner ---
+    if (analysis.fitScore) {
+      const recType = analysis.fitScore.score >= 7 ? 'positive' as const
+        : analysis.fitScore.score >= 4 ? 'neutral' as const
+          : 'warning' as const;
+      wrapper.appendChild(
+        createRecommendationBanner(analysis.fitScore.recommendation, recType)
+      );
+    }
+
+    // --- Scores row ---
+    const scoresHtml = `
       <div class="syntropy-scores">
         <div class="syntropy-score">
           <span class="label">Safety</span>
@@ -190,40 +227,46 @@ export class HoverCard {
         </div>
       </div>
     `;
+    const scoresEl = createElement('div', {});
+    scoresEl.innerHTML = scoresHtml;
+    wrapper.appendChild(scoresEl);
 
-    // Show critical concerns prominently
+    // --- Critical concerns ---
+    const criticalConcerns = analysis.concerns.filter(
+      (c) => c.severity === 'critical' || c.severity === 'high'
+    );
     if (criticalConcerns.length > 0) {
-      html += `
-        <div class="syntropy-concerns">
-          <h4>⚠️ Important Alerts</h4>
-          ${criticalConcerns.map((concern) => `
-            <div class="syntropy-concern ${concern.severity}">
-              <strong>${concern.title}</strong>
-              <p>${concern.description}</p>
-            </div>
-          `).join('')}
-        </div>
+      const concernsEl = createElement('div', { class: 'syntropy-concerns' });
+      concernsEl.innerHTML = `
+        <h4>Important Alerts</h4>
+        ${criticalConcerns.map((concern) => `
+          <div class="syntropy-concern ${concern.severity}">
+            <strong>${concern.title}</strong>
+            <p>${concern.description}</p>
+          </div>
+        `).join('')}
       `;
+      wrapper.appendChild(concernsEl);
     }
 
-    // Show key insights
-    if (analysis.insights.length > 0) {
-      const topInsights = analysis.insights.slice(0, 3);
-      html += `
-        <div class="syntropy-insights">
-          <h4>Key Insights</h4>
-          <ul>
-            ${topInsights.map((insight) => `
-              <li class="importance-${insight.importance}">
-                <strong>${insight.category}:</strong> ${insight.text}
-              </li>
-            `).join('')}
-          </ul>
-        </div>
-      `;
+    // --- Source badge ---
+    if (analysis.nutritionSource) {
+      const sourceLabel = analysis.nutritionSource === 'USDA_FDC' ? 'USDA FDC' : 'AI Estimated';
+      wrapper.appendChild(createSourceBadge(sourceLabel));
     }
 
-    return html;
+    return wrapper;
+  }
+
+  /**
+   * Build analysis content as HTML string (legacy compat)
+   * @param analysis - AI analysis
+   * @returns HTML content
+   */
+  private buildAnalysisContent(analysis: AIAnalysis): string {
+    // Delegate to the element-based builder and extract innerHTML
+    const el = this.buildAnalysisContentElement(analysis);
+    return el.innerHTML;
   }
 
   /**
@@ -240,7 +283,7 @@ export class HoverCard {
   }
 
   /**
-   * Build card footer
+   * Build card footer with action buttons
    * @returns Footer element
    */
   private buildFooter(): HTMLElement {
@@ -248,17 +291,30 @@ export class HoverCard {
       class: 'syntropy-card-footer',
     });
 
-    const link = createElement('a', {
+    // Open Details → side panel
+    const detailsLink = createElement('a', {
       href: '#',
       class: 'syntropy-view-details',
-    }, ['View Full Analysis →']);
+    }, ['Open Details']);
 
-    link.addEventListener('click', (e) => {
+    detailsLink.addEventListener('click', (e) => {
       e.preventDefault();
-      this.openFullAnalysis();
+      this.openSidePanel();
     });
 
-    footer.appendChild(link);
+    footer.appendChild(detailsLink);
+
+    // Add to Journal button
+    const journalBtn = createElement('button', {
+      class: 'syntropy-journal-btn',
+    }, ['+ Journal']);
+
+    journalBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.addToJournal();
+    });
+
+    footer.appendChild(journalBtn);
 
     return footer;
   }
@@ -315,16 +371,35 @@ export class HoverCard {
   }
 
   /**
-   * Open full analysis in popup
+   * Open full analysis in side panel
    */
-  private openFullAnalysis(): void {
+  private openSidePanel(): void {
     if (this.currentProduct) {
-      // Send message to open popup with product details
       chrome.runtime.sendMessage({
-        type: 'OPEN_POPUP',
+        type: 'OPEN_SIDE_PANEL',
         payload: { product: this.currentProduct },
       });
     }
+  }
+
+  /**
+   * Log the current product to the Journal
+   */
+  private addToJournal(): void {
+    if (!this.currentProduct) return;
+
+    const nutrition = this.currentProduct.nutrition;
+    chrome.runtime.sendMessage({
+      type: 'JOURNAL_LOG_FOOD',
+      payload: {
+        food_name: this.currentProduct.name,
+        calories: nutrition?.calories,
+        protein: nutrition?.protein ? parseFloat(nutrition.protein) : undefined,
+        carbs: nutrition?.totalCarbohydrates ? parseFloat(nutrition.totalCarbohydrates) : undefined,
+        fat: nutrition?.totalFat ? parseFloat(nutrition.totalFat) : undefined,
+        source_url: this.currentProduct.url,
+      },
+    });
   }
 
   /**

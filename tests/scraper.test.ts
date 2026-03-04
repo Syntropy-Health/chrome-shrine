@@ -5,18 +5,31 @@
  * and product extraction logic.
  */
 
+import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { AmazonFreshScraper } from '../src/modules/scraper/amazon-fresh';
 import { CookUnityScraper } from '../src/modules/scraper/cookunity';
 import { GenericScraper } from '../src/modules/scraper/generic';
 import { ScraperManager } from '../src/modules/scraper';
-import type { FoodProduct } from '../src/types';
 
 /**
- * Mock DOM for testing
+ * Create a mock document with a controllable location.
+ * Uses a Proxy to intercept the `location` property since jsdom
+ * makes it non-configurable on parsed documents.
  */
-function createMockDocument(html: string): Document {
+function createMockDocument(html: string, href = 'https://example.com'): Document {
   const parser = new DOMParser();
-  return parser.parseFromString(html, 'text/html');
+  const doc = parser.parseFromString(html, 'text/html');
+  const url = new URL(href);
+  const fakeLocation = { href, pathname: url.pathname, hostname: url.hostname };
+
+  return new Proxy(doc, {
+    get(target, prop, receiver) {
+      if (prop === 'location') return fakeLocation;
+      const val = Reflect.get(target, prop, receiver);
+      if (typeof val === 'function') return val.bind(target);
+      return val;
+    },
+  }) as Document;
 }
 
 describe('AmazonFreshScraper', () => {
@@ -27,19 +40,10 @@ describe('AmazonFreshScraper', () => {
   });
 
   test('should detect Amazon Fresh pages', () => {
-    const doc = createMockDocument(`
-      <html>
-        <body>
-          <div data-component-type="s-search-result" data-asin="B001234567"></div>
-        </body>
-      </html>
-    `);
-
-    // Mock location
-    Object.defineProperty(doc, 'location', {
-      value: { href: 'https://www.amazon.com/alm/storefront/fresh/' },
-      writable: true,
-    });
+    const doc = createMockDocument(
+      `<html><body><div data-component-type="s-search-result" data-asin="B001234567"></div></body></html>`,
+      'https://www.amazon.com/alm/storefront/fresh/',
+    );
 
     expect(scraper.isSupported(doc)).toBe(true);
   });
@@ -53,7 +57,7 @@ describe('AmazonFreshScraper', () => {
       </div>
     `;
 
-    const doc = createMockDocument(html);
+    const doc = createMockDocument(html, 'https://www.amazon.com/alm/storefront/fresh/');
     const element = doc.querySelector('[data-asin]')!;
     const product = await scraper.extractProductFromElement(element);
 
@@ -81,18 +85,10 @@ describe('CookUnityScraper', () => {
   });
 
   test('should detect CookUnity pages', () => {
-    const doc = createMockDocument(`
-      <html>
-        <body>
-          <div class="meal-card"></div>
-        </body>
-      </html>
-    `);
-
-    Object.defineProperty(doc, 'location', {
-      value: { href: 'https://www.cookunity.com/meals/' },
-      writable: true,
-    });
+    const doc = createMockDocument(
+      `<html><body><div class="meal-card"></div></body></html>`,
+      'https://www.cookunity.com/meals/',
+    );
 
     expect(scraper.isSupported(doc)).toBe(true);
   });
@@ -107,7 +103,7 @@ describe('CookUnityScraper', () => {
       </article>
     `;
 
-    const doc = createMockDocument(html);
+    const doc = createMockDocument(html, 'https://www.cookunity.com/meals/');
     const element = doc.querySelector('.meal-card')!;
     const product = await scraper.extractProductFromElement(element);
 
@@ -167,15 +163,15 @@ describe('ScraperManager', () => {
   let manager: ScraperManager;
 
   beforeEach(() => {
+    (ScraperManager as any).instance = null;
     manager = ScraperManager.getInstance();
   });
 
   test('should select correct scraper for Amazon', () => {
-    const doc = createMockDocument('<div data-asin="B001234567"></div>');
-    Object.defineProperty(doc, 'location', {
-      value: { href: 'https://www.amazon.com/alm/storefront/fresh/' },
-      writable: true,
-    });
+    const doc = createMockDocument(
+      '<div data-asin="B001234567"></div>',
+      'https://www.amazon.com/alm/storefront/fresh/',
+    );
 
     const detected = manager.detectScraper(doc);
     expect(detected).toBe(true);
@@ -199,35 +195,3 @@ describe('ScraperManager', () => {
     expect(scraper?.name).toBe('Generic Food');
   });
 });
-
-/**
- * Manual test runner for browser environment
- * Run this in the browser console on actual pages
- */
-export async function runManualScraperTests() {
-  console.log('🧪 Running Manual Scraper Tests...\n');
-
-  const manager = ScraperManager.getInstance();
-
-  // Test 1: Detect current page
-  console.log('Test 1: Page Detection');
-  const isSupported = manager.isFoodPage(document);
-  console.log(`✓ Page is ${isSupported ? '' : 'not '}food-related`);
-
-  if (isSupported) {
-    const scraper = manager.getCurrentScraper();
-    console.log(`✓ Using scraper: ${scraper?.name}\n`);
-
-    // Test 2: Extract products
-    console.log('Test 2: Product Extraction');
-    const products = await manager.extractProducts(document);
-    console.log(`✓ Found ${products.length} products`);
-
-    if (products.length > 0) {
-      console.log('\nFirst product:');
-      console.log(JSON.stringify(products[0], null, 2));
-    }
-  }
-
-  console.log('\n✅ Manual tests complete!');
-}

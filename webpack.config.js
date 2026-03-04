@@ -27,6 +27,7 @@ module.exports = (env, argv) => {
       'background/service-worker': './src/background/service-worker.ts',
       'content/content': './src/content/content.ts',
       'popup/popup': './src/popup/popup.ts',
+      'sidepanel/sidepanel': './src/sidepanel/sidepanel.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -112,6 +113,11 @@ module.exports = (env, argv) => {
           faviconPath: iconConfig.faviconPath,
         },
       }),
+      new HtmlWebpackPlugin({
+        template: './src/sidepanel/sidepanel.html',
+        filename: 'sidepanel/sidepanel.html',
+        chunks: ['sidepanel/sidepanel'],
+      }),
       // Inject environment variables into the build
       new webpack.DefinePlugin({
         'process.env.CLERK_PUBLISHABLE_KEY': JSON.stringify(process.env.CLERK_PUBLISHABLE_KEY || ''),
@@ -121,6 +127,7 @@ module.exports = (env, argv) => {
         'process.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || ''),
         'process.env.OPENAI_MODEL': JSON.stringify(process.env.OPENAI_MODEL || 'gpt-4-vision-preview'),
         'process.env.DIET_API_URL': JSON.stringify(process.env.DIET_API_URL || 'http://localhost:8000'),
+        'process.env.JOURNAL_API_URL': JSON.stringify(process.env.JOURNAL_API_URL || 'http://localhost:3000'),
       }),
     ],
   };

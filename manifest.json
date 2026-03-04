@@ -7,7 +7,8 @@
     "storage",
     "activeTab",
     "scripting",
-    "identity"
+    "identity",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://www.amazon.com/*",
@@ -44,6 +45,9 @@
       "run_at": "document_idle"
     }
   ],
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
