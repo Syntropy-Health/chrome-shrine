@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   DIET_API: process.env.DIET_API_URL || 'http://localhost:8000',
   USDA_FDC: 'https://api.nal.usda.gov/fdc/v1',
   JOURNAL_API: process.env.JOURNAL_API_URL || 'http://localhost:3000',
+  OPENNUTRITION_API: process.env.OPENNUTRITION_API_URL || 'http://localhost:3001',
 } as const;
 
 /**
