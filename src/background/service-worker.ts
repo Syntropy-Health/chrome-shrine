@@ -9,6 +9,7 @@ import { IntegrationManager } from '@modules/integrations';
 import { DietApiClient } from '@modules/integrations/diet-api';
 import { JournalApiClient } from '@modules/integrations/journal-api';
 import { OpenDietDataClient } from '@modules/integrations/open-diet-data';
+import { OpenNutritionClient } from '@modules/nutrition';
 import { ConfigManager } from '@/config/config';
 import { CacheManager } from '@utils/storage';
 import type { ExtensionMessage, ExtensionResponse } from '@types';
@@ -21,6 +22,7 @@ class BackgroundService {
   private dietClient = DietApiClient.getInstance();
   private journalClient = JournalApiClient.getInstance();
   private nutritionClient = OpenDietDataClient.getInstance();
+  private openNutritionClient = OpenNutritionClient.getInstance();
   private config = ConfigManager.getInstance();
 
   /**
@@ -188,10 +190,8 @@ class BackgroundService {
 
         case 'OPEN_SIDE_PANEL':
           {
-            // Open side panel and send product data to it
             if (sender.tab?.windowId != null) {
               await chrome.sidePanel.open({ windowId: sender.tab.windowId });
-              // Short delay to let the panel initialize before sending data
               setTimeout(() => {
                 chrome.runtime.sendMessage({
                   type: 'SIDE_PANEL_SHOW_PRODUCT',
@@ -200,6 +200,45 @@ class BackgroundService {
               }, 300);
             }
             sendResponse({ success: true });
+          }
+          break;
+
+        case 'OPENNUTRITION_SEARCH':
+          {
+            const foods = await this.openNutritionClient.searchFoods(
+              message.payload.query,
+              message.payload.page || 1,
+              message.payload.pageSize || 5,
+            );
+            sendResponse({ success: true, data: foods });
+          }
+          break;
+
+        case 'OPENNUTRITION_MACROS':
+          {
+            const macroResult = await this.openNutritionClient.calculateMacros(
+              message.payload.query,
+              message.payload.portion_grams || 100,
+            );
+            sendResponse({ success: !!macroResult, data: macroResult });
+          }
+          break;
+
+        case 'OPENNUTRITION_PROFILE':
+          {
+            const nutritionProfile = await this.openNutritionClient.getFullProfile(
+              message.payload.query,
+            );
+            sendResponse({ success: !!nutritionProfile, data: nutritionProfile });
+          }
+          break;
+
+        case 'OPENNUTRITION_BARCODE':
+          {
+            const barcodeResult = await this.openNutritionClient.getFoodByBarcode(
+              message.payload.ean13,
+            );
+            sendResponse({ success: !!barcodeResult, data: barcodeResult });
           }
           break;
 

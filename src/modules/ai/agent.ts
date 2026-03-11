@@ -14,6 +14,7 @@ import { IntegrationManager } from '@modules/integrations';
 import { DietApiClient } from '@modules/integrations/diet-api';
 import { JournalApiClient } from '@modules/integrations/journal-api';
 import { OpenDietDataClient } from '@modules/integrations/open-diet-data';
+import { OpenNutritionClient } from '@modules/nutrition';
 import type { AIAnalysis, ExtensionConfig, FoodProduct, JournalHealthProfile, NutritionInfo, PersonalFitScore } from '@types';
 import { CacheManager } from '@utils/storage';
 import { generateObject } from 'ai';
@@ -29,6 +30,7 @@ export class FoodAnalysisAgent {
   private imageProcessor = ImageProcessor.getInstance();
   private integrationManager = IntegrationManager.getInstance();
   private nutritionClient = OpenDietDataClient.getInstance();
+  private openNutritionClient = OpenNutritionClient.getInstance();
   private dietClient = DietApiClient.getInstance();
   private journalClient = JournalApiClient.getInstance();
   private config = ConfigManager.getInstance();
@@ -123,12 +125,14 @@ export class FoodAnalysisAgent {
       const usdaNutrition = usdaNutritionResult.status === 'fulfilled' ? usdaNutritionResult.value : null;
       const userProfile = profileResult.status === 'fulfilled' ? profileResult.value : null;
 
-      // Enrich product with real USDA nutrition data when available
+      // Enrich product with authoritative nutrition data when available
+      let nutritionSource: 'USDA_FDC' | 'AI_ESTIMATED' | 'SCRAPED' = 'AI_ESTIMATED';
       if (usdaNutrition) {
         product.nutrition = {
           ...product.nutrition,
           ...usdaNutrition,
         };
+        nutritionSource = 'USDA_FDC';
       }
 
       // Generate AI analysis and fit scoring in parallel
@@ -176,7 +180,7 @@ export class FoodAnalysisAgent {
           confidence: imageAnalysis?.confidence || 0.9,
         },
         fitScore: fitScore || undefined,
-        nutritionSource: usdaNutrition ? 'USDA_FDC' : 'AI_ESTIMATED',
+        nutritionSource: nutritionSource,
       };
 
       // Add note when nutrition data is sourced from USDA FoodData Central
@@ -345,12 +349,27 @@ Be thorough but concise. Focus on actionable insights.`;
   }
 
   /**
-   * Fetch real nutrition data from USDA FoodData Central
-   * Non-blocking — returns null on any failure to allow AI fallback
+   * Fetch real nutrition data — tries OpenNutrition first, falls back to USDA FDC.
+   * Non-blocking — returns null on any failure to allow AI fallback.
    * @param productName - Product name to look up
    * @returns NutritionInfo or null
    */
   private async fetchNutritionData(productName: string): Promise<NutritionInfo | null> {
+    // Try OpenNutrition first (local OpenNutrition database)
+    try {
+      const onFoods = await this.openNutritionClient.searchFoods(productName, 1, 1);
+      if (onFoods.length > 0) {
+        const info = OpenNutritionClient.toNutritionInfo(onFoods[0]);
+        if (info.calories !== undefined) {
+          console.log('[FoodAnalysisAgent] Nutrition from OpenNutrition');
+          return info;
+        }
+      }
+    } catch {
+      // OpenNutrition unavailable, fall through
+    }
+
+    // Fallback to USDA FoodData Central
     try {
       return await this.nutritionClient.getFoodNutrition(productName);
     } catch (error) {
