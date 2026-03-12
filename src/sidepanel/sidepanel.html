@@ -5,291 +5,778 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Syntropy Food Insights</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #1a1d27;
+      --bg-card: #1e2130;
+      --bg-card-hover: #252838;
+      --border: #2a2d3a;
+      --text-primary: #f0f2f5;
+      --text-secondary: #8b8fa3;
+      --text-muted: #5c6070;
+      --accent-blue: #3b82f6;
+      --accent-blue-dim: rgba(59, 130, 246, 0.15);
+      --accent-green: #22c55e;
+      --accent-green-dim: rgba(34, 197, 94, 0.15);
+      --accent-amber: #f59e0b;
+      --accent-amber-dim: rgba(245, 158, 11, 0.15);
+      --accent-red: #ef4444;
+      --accent-red-dim: rgba(239, 68, 68, 0.15);
+      --accent-purple: #a855f7;
+      --accent-purple-dim: rgba(168, 85, 247, 0.15);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      font-size: 14px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
       line-height: 1.5;
-      color: #111827;
-      background: #f9fafb;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      -webkit-font-smoothing: antialiased;
     }
 
-    .panel-header {
-      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-      color: white;
-      padding: 16px 20px;
+    /* --- Header --- */
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
-    .panel-header h1 {
-      font-size: 18px;
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent-green) 0%, #10b981 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      font-weight: 700;
+    }
+
+    .header-title {
+      font-size: 15px;
       font-weight: 600;
+      color: var(--text-primary);
     }
 
-    .panel-header .subtitle {
+    .header-subtitle {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .header-auth {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .auth-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-green);
+      object-fit: cover;
+    }
+
+    .auth-badge {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+    }
+
+    .auth-badge.offline { background: var(--text-muted); }
+
+    .auth-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
       font-size: 12px;
-      opacity: 0.85;
+      cursor: pointer;
+      transition: all var(--transition);
     }
 
+    .auth-btn:hover {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    /* --- Tabs --- */
+    .tab-bar {
+      display: flex;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      gap: 2px;
+    }
+
+    .tab-btn {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition);
+    }
+
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    /* --- Main Content --- */
     .panel-content {
       padding: 16px;
+      overflow-y: auto;
     }
 
-    .empty-state {
-      text-align: center;
-      padding: 48px 24px;
-      color: #6b7280;
-    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
-    .empty-state .icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-    }
-
-    .empty-state h2 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 8px;
-    }
-
-    .empty-state p {
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    /* Product Detail */
-    .product-detail {
-      display: none;
-    }
-
-    .product-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: #111827;
-      margin-bottom: 4px;
-    }
-
-    .product-brand {
-      font-size: 14px;
-      color: #6b7280;
-      margin-bottom: 16px;
-    }
-
-    .detail-section {
-      background: white;
-      border-radius: 8px;
+    /* --- Cards --- */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 16px;
       margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: border-color var(--transition);
     }
 
-    .detail-section h3 {
-      font-size: 14px;
-      font-weight: 600;
-      color: #111827;
+    .card:hover { border-color: #3a3d4a; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
-    /* Score cards */
-    .scores-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .score-card {
-      background: white;
-      border-radius: 8px;
-      padding: 16px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .score-card .score-value {
-      font-size: 32px;
-      font-weight: 700;
-    }
-
-    .score-card .score-label {
+    .card-title {
       font-size: 12px;
-      color: #6b7280;
+      font-weight: 600;
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
-    .score-excellent { color: #16a34a; }
-    .score-good { color: #2563eb; }
-    .score-fair { color: #d97706; }
-    .score-poor { color: #dc2626; }
-
-    /* Concern list */
-    .concern-item {
-      padding: 12px;
-      border-left: 3px solid #dc2626;
-      background: #fef2f2;
-      border-radius: 6px;
-      margin-bottom: 8px;
-    }
-
-    .concern-item.high { border-color: #dc2626; background: #fef2f2; }
-    .concern-item.critical { border-color: #991b1b; background: #fef2f2; }
-    .concern-item.medium { border-color: #d97706; background: #fffbeb; }
-
-    .concern-item strong {
-      display: block;
-      margin-bottom: 4px;
-      color: #111827;
-    }
-
-    .concern-item p {
-      margin: 0;
-      font-size: 13px;
-      color: #374151;
-    }
-
-    /* Insights list */
-    .insight-item {
-      padding: 8px 0;
-      border-bottom: 1px solid #f3f4f6;
-      font-size: 13px;
-      color: #374151;
-    }
-
-    .insight-item:last-child {
-      border-bottom: none;
-    }
-
-    .insight-category {
-      font-size: 11px;
+    .card-badge {
+      font-size: 10px;
       font-weight: 600;
-      color: #6b7280;
+      padding: 2px 8px;
+      border-radius: 10px;
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
 
-    /* Journal button */
-    .journal-btn {
-      width: 100%;
+    .badge-green { background: var(--accent-green-dim); color: var(--accent-green); }
+    .badge-amber { background: var(--accent-amber-dim); color: var(--accent-amber); }
+    .badge-red { background: var(--accent-red-dim); color: var(--accent-red); }
+    .badge-blue { background: var(--accent-blue-dim); color: var(--accent-blue); }
+    .badge-purple { background: var(--accent-purple-dim); color: var(--accent-purple); }
+
+    /* --- Score Display --- */
+    .scores-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .score-tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
       padding: 12px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
+      text-align: center;
+    }
+
+    .score-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .score-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .score-excellent { color: var(--accent-green); }
+    .score-good { color: var(--accent-blue); }
+    .score-fair { color: var(--accent-amber); }
+    .score-poor { color: var(--accent-red); }
+
+    /* --- Macro Donut Chart --- */
+    .macro-chart-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .donut-wrapper {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .donut-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .donut-cal-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .donut-cal-label {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .macro-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .legend-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .legend-name {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .legend-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .legend-pct {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    /* --- Nutrient Bars --- */
+    .nutrient-bar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+
+    .nutrient-bar-row + .nutrient-bar-row {
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .nutrient-bar-name {
+      font-size: 12px;
+      color: var(--text-secondary);
+      width: 80px;
+      flex-shrink: 0;
+    }
+
+    .nutrient-bar-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 3px;
+      margin: 0 10px;
+      overflow: hidden;
+    }
+
+    .nutrient-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .nutrient-bar-value {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      width: 50px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* --- Fit Score Gauge --- */
+    .fit-gauge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .fit-gauge-label {
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .fit-gauge-rec {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* --- Warnings --- */
+    .warning-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--accent-red-dim);
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--accent-red);
+    }
+
+    .warning-icon { flex-shrink: 0; font-size: 14px; }
+
+    /* --- Concerns --- */
+    .concern-row {
+      padding: 10px 12px;
+      border-left: 3px solid var(--accent-amber);
+      background: rgba(245, 158, 11, 0.06);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 8px;
+    }
+
+    .concern-row.critical { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.06); }
+    .concern-row.high { border-color: var(--accent-amber); }
+    .concern-row.medium { border-color: var(--accent-amber); }
+
+    .concern-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .concern-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* --- Insight rows --- */
+    .insight-row {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .insight-row:last-child { border-bottom: none; }
+
+    .insight-cat {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 2px;
+    }
+
+    .insight-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* --- Buttons --- */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all var(--transition);
+      border: none;
     }
 
-    .journal-btn:hover {
-      background: #388E3C;
+    .btn-primary {
+      background: var(--accent-blue);
+      color: white;
     }
 
-    .journal-btn:disabled {
-      background: #9ca3af;
+    .btn-primary:hover { background: #2563eb; }
+
+    .btn-success {
+      background: var(--accent-green);
+      color: white;
+    }
+
+    .btn-success:hover { background: #16a34a; }
+
+    .btn:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
-    /* Loading */
-    .loading {
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    /* --- Empty / Loading States --- */
+    .state-empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .state-empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+    }
+
+    .state-empty h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .state-empty p {
+      font-size: 12px;
+      line-height: 1.6;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+
+    .state-loading {
       display: none;
       text-align: center;
       padding: 48px 24px;
     }
 
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #e5e7eb;
-      border-top-color: #2563eb;
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent-blue);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.7s linear infinite;
       margin: 0 auto 12px;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .state-loading p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- Product Header --- */
+    .product-header {
+      margin-bottom: 16px;
+    }
+
+    .product-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .product-brand {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .product-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-secondary);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    /* --- Profile Section --- */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .profile-chip {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      text-align: center;
     }
 
     .hidden { display: none !important; }
+
+    /* --- Scrollbar --- */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
   </style>
 </head>
 <body>
-  <div class="panel-header">
-    <div>
-      <h1>Syntropy Food Insights</h1>
-      <div class="subtitle">Detailed Product Analysis</div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-logo">S</div>
+      <div>
+        <div class="header-title">Syntropy</div>
+        <div class="header-subtitle">Food Intelligence</div>
+      </div>
     </div>
+    <div class="header-auth" id="headerAuth">
+      <div class="auth-badge" id="authBadge" title="Not signed in"></div>
+      <button class="auth-btn" id="headerSignInBtn">Sign in</button>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="nutrition">Nutrition</button>
+    <button class="tab-btn" data-tab="compatibility">Profile</button>
   </div>
 
   <div class="panel-content">
     <!-- Empty State -->
-    <div class="empty-state" id="emptyState">
-      <div class="icon">&#x1F50D;</div>
+    <div class="state-empty" id="emptyState">
+      <div class="state-empty-icon">&#x1F50E;</div>
       <h2>No Product Selected</h2>
-      <p>Hover over a food product on any supported page and click "Open Details" to see a full analysis here.</p>
+      <p>Hover over a food product on any page and click "Open Details" to see a full analysis.</p>
     </div>
 
     <!-- Loading State -->
-    <div class="loading" id="loadingState">
+    <div class="state-loading" id="loadingState">
       <div class="spinner"></div>
-      <p>Loading analysis...</p>
+      <p>Analyzing product...</p>
     </div>
 
-    <!-- Product Detail -->
-    <div class="product-detail" id="productDetail">
-      <h2 class="product-name" id="productName"></h2>
-      <p class="product-brand" id="productBrand"></p>
-
-      <!-- Macro / Nutrition Visual -->
-      <div class="detail-section" id="nutritionSection">
-        <h3>Nutrition</h3>
-        <div id="nutritionContent"></div>
+    <!-- === OVERVIEW TAB === -->
+    <div class="tab-panel active" id="tab-overview">
+      <!-- Product Header -->
+      <div class="product-header" id="productHeader">
+        <h2 class="product-name" id="productName"></h2>
+        <p class="product-brand" id="productBrand"></p>
+        <span class="product-source" id="nutritionSource"></span>
       </div>
 
-      <!-- Scores -->
-      <div class="scores-grid" id="scoresGrid">
-        <div class="score-card">
+      <!-- Scores Row -->
+      <div class="scores-row" id="scoresRow">
+        <div class="score-tile">
           <div class="score-value" id="safetyScore">--</div>
           <div class="score-label">Safety</div>
         </div>
-        <div class="score-card">
+        <div class="score-tile">
           <div class="score-value" id="healthScore">--</div>
           <div class="score-label">Health</div>
+        </div>
+        <div class="score-tile">
+          <div class="score-value" id="fitScoreValue">--</div>
+          <div class="score-label">Fit</div>
         </div>
       </div>
 
       <!-- Summary -->
-      <div class="detail-section">
-        <h3>Summary</h3>
-        <p id="summaryText"></p>
+      <div class="card" id="summaryCard">
+        <div class="card-header">
+          <span class="card-title">Summary</span>
+        </div>
+        <p id="summaryText" style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;"></p>
+      </div>
+
+      <!-- Quick Macro Bar -->
+      <div class="card" id="quickMacroCard">
+        <div class="card-header">
+          <span class="card-title">Macros</span>
+          <span class="card-badge badge-blue" id="calBadge"></span>
+        </div>
+        <div id="quickMacroContent"></div>
       </div>
 
       <!-- Concerns -->
-      <div class="detail-section" id="concernsSection">
-        <h3>Concerns</h3>
+      <div class="card" id="concernsCard">
+        <div class="card-header">
+          <span class="card-title">Concerns</span>
+          <span class="card-badge badge-amber" id="concernCount"></span>
+        </div>
         <div id="concernsList"></div>
       </div>
 
-      <!-- Insights -->
-      <div class="detail-section" id="insightsSection">
-        <h3>Insights</h3>
-        <div id="insightsList"></div>
+      <!-- Journal Button -->
+      <button class="btn btn-success" id="journalBtn" style="margin-top: 4px;">
+        <span>+</span> Add to Journal
+      </button>
+    </div>
+
+    <!-- === NUTRITION TAB === -->
+    <div class="tab-panel" id="tab-nutrition">
+      <!-- Macro Donut Chart -->
+      <div class="card" id="macroChartCard">
+        <div class="card-header">
+          <span class="card-title">Macronutrient Breakdown</span>
+        </div>
+        <div class="macro-chart-container" id="macroChartContent">
+          <div class="donut-wrapper" id="donutWrapper">
+            <svg id="macroDonut" viewBox="0 0 120 120" width="120" height="120"></svg>
+            <div class="donut-center">
+              <div class="donut-cal-value" id="donutCalValue">0</div>
+              <div class="donut-cal-label">kcal</div>
+            </div>
+          </div>
+          <div class="macro-legend" id="macroLegend"></div>
+        </div>
       </div>
 
-      <!-- Journal -->
-      <button class="journal-btn" id="journalBtn">+ Add to Journal</button>
+      <!-- Detailed Nutrients -->
+      <div class="card" id="nutrientDetailCard">
+        <div class="card-header">
+          <span class="card-title">Nutrient Detail</span>
+        </div>
+        <div id="nutrientBars"></div>
+      </div>
+
+      <!-- Vitamins & Minerals -->
+      <div class="card" id="microCard">
+        <div class="card-header">
+          <span class="card-title">Vitamins & Minerals</span>
+        </div>
+        <div id="microContent"></div>
+      </div>
+    </div>
+
+    <!-- === COMPATIBILITY TAB === -->
+    <div class="tab-panel" id="tab-compatibility">
+      <!-- Fit Score Gauge -->
+      <div class="card" id="fitGaugeCard">
+        <div class="card-header">
+          <span class="card-title">Personal Fit Score</span>
+        </div>
+        <div class="fit-gauge" id="fitGaugeContent">
+          <svg id="fitGaugeSvg" viewBox="0 0 120 80" width="160" height="108"></svg>
+          <div class="fit-gauge-label" id="fitGaugeLabel">--</div>
+          <div class="fit-gauge-rec" id="fitGaugeRec"></div>
+        </div>
+      </div>
+
+      <!-- Macro Fit Status -->
+      <div class="card" id="macroFitCard">
+        <div class="card-header">
+          <span class="card-title">Macro Compatibility</span>
+        </div>
+        <div id="macroFitContent"></div>
+      </div>
+
+      <!-- Warnings -->
+      <div class="card" id="warningsCard" class="hidden">
+        <div class="card-header">
+          <span class="card-title">Warnings</span>
+        </div>
+        <div id="warningsList"></div>
+      </div>
+
+      <!-- Health Profile Preview -->
+      <div class="card" id="profileCard">
+        <div class="card-header">
+          <span class="card-title">Your Profile</span>
+          <span class="card-badge badge-purple" id="profileStatus">Not connected</span>
+        </div>
+        <div id="profileContent">
+          <p style="font-size: 12px; color: var(--text-muted);">
+            Sign in to connect your Syntropy Journal health profile for personalized insights.
+          </p>
+        </div>
+      </div>
+
+      <!-- Insights -->
+      <div class="card" id="insightsCard">
+        <div class="card-header">
+          <span class="card-title">Insights</span>
+        </div>
+        <div id="insightsList"></div>
+      </div>
     </div>
   </div>
 

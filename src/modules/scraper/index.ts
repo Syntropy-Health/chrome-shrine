@@ -10,6 +10,8 @@
 import type { IScraper, FoodProduct } from '@types';
 import { AmazonFreshScraper } from './amazon-fresh';
 import { CookUnityScraper } from './cookunity';
+import { DoorDashScraper } from './doordash';
+import { ShopifySupplementScraper } from './shopify-supplement';
 import { GenericScraper } from './generic';
 
 /**
@@ -18,6 +20,8 @@ import { GenericScraper } from './generic';
 const SCRAPERS: IScraper[] = [
   new AmazonFreshScraper(),
   new CookUnityScraper(),
+  new DoorDashScraper(),
+  new ShopifySupplementScraper(),
   new GenericScraper(), // Fallback scraper
 ];
 
@@ -131,4 +135,4 @@ export class ScraperManager {
 }
 
 // Export scrapers for direct use if needed
-export { AmazonFreshScraper, CookUnityScraper, GenericScraper };
+export { AmazonFreshScraper, CookUnityScraper, DoorDashScraper, ShopifySupplementScraper, GenericScraper };

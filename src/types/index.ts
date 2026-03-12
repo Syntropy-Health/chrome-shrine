@@ -53,7 +53,7 @@ export interface FoodProduct {
   /** Source URL */
   url: string;
   /** Source website */
-  source: 'amazon-fresh' | 'cookunity' | 'generic';
+  source: 'amazon-fresh' | 'cookunity' | 'doordash' | 'shopify' | 'generic';
   /** DOM element reference (for hover cards) */
   element?: Element;
   /** Additional metadata */
@@ -282,6 +282,10 @@ export enum MessageType {
   JOURNAL_EXCHANGE_KEY = 'JOURNAL_EXCHANGE_KEY',
   DIET_SCORE_FOOD = 'DIET_SCORE_FOOD',
   OPEN_SIDE_PANEL = 'OPEN_SIDE_PANEL',
+  OPENNUTRITION_SEARCH = 'OPENNUTRITION_SEARCH',
+  OPENNUTRITION_MACROS = 'OPENNUTRITION_MACROS',
+  OPENNUTRITION_PROFILE = 'OPENNUTRITION_PROFILE',
+  OPENNUTRITION_BARCODE = 'OPENNUTRITION_BARCODE',
 }
 
 /**

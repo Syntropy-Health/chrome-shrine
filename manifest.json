@@ -13,6 +13,8 @@
   "host_permissions": [
     "https://www.amazon.com/*",
     "https://www.cookunity.com/*",
+    "https://www.doordash.com/*",
+    "https://*.myshopify.com/*",
     "https://api.fda.gov/*",
     "https://www.fsis.usda.gov/*",
     "https://*.clerk.accounts.dev/*",
