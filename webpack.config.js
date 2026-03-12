@@ -129,6 +129,7 @@ module.exports = (env, argv) => {
         'process.env.DIET_API_URL': JSON.stringify(process.env.DIET_API_URL || 'http://localhost:8000'),
         'process.env.JOURNAL_API_URL': JSON.stringify(process.env.JOURNAL_API_URL || 'http://localhost:3000'),
         'process.env.OPENNUTRITION_API_URL': JSON.stringify(process.env.OPENNUTRITION_API_URL || 'http://localhost:3001'),
+        'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN || ''),
       }),
     ],
   };

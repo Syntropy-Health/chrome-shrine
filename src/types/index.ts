@@ -53,7 +53,7 @@ export interface FoodProduct {
   /** Source URL */
   url: string;
   /** Source website */
-  source: 'amazon-fresh' | 'cookunity' | 'generic';
+  source: 'amazon-fresh' | 'cookunity' | 'doordash' | 'shopify' | 'generic';
   /** DOM element reference (for hover cards) */
   element?: Element;
   /** Additional metadata */

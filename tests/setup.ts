@@ -1,18 +1,17 @@
 /**
- * Vitest global setup - Chrome API mocks for extension testing
+ * Global test setup — Chrome API mocks
  */
 import { vi } from 'vitest';
 
-// In-memory chrome.storage store
+// Chrome storage mock with in-memory store
 const storageStore: Record<string, any> = {};
 
-const chromeStorageArea = {
-  get: vi.fn((keys: string | string[] | null) => {
-    if (keys === null) return Promise.resolve({ ...storageStore });
-    const keyArr = typeof keys === 'string' ? [keys] : keys;
+const createStorageMock = () => ({
+  get: vi.fn((keys: string | string[]) => {
     const result: Record<string, any> = {};
-    for (const k of keyArr) {
-      if (k in storageStore) result[k] = storageStore[k];
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    for (const k of keyList) {
+      if (storageStore[k] !== undefined) result[k] = storageStore[k];
     }
     return Promise.resolve(result);
   }),
@@ -21,70 +20,53 @@ const chromeStorageArea = {
     return Promise.resolve();
   }),
   remove: vi.fn((keys: string | string[]) => {
-    const keyArr = typeof keys === 'string' ? [keys] : keys;
-    for (const k of keyArr) delete storageStore[k];
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    for (const k of keyList) delete storageStore[k];
     return Promise.resolve();
   }),
   clear: vi.fn(() => {
-    for (const k of Object.keys(storageStore)) delete storageStore[k];
+    Object.keys(storageStore).forEach((k) => delete storageStore[k]);
     return Promise.resolve();
   }),
-};
+  getBytesInUse: vi.fn(() => Promise.resolve(0)),
+});
 
-const messageListeners: Array<(...args: any[]) => any> = [];
+const storageMock = createStorageMock();
 
 const chromeMock = {
   storage: {
-    local: { ...chromeStorageArea },
-    sync: { ...chromeStorageArea },
+    local: storageMock,
+    sync: createStorageMock(),
   },
   runtime: {
     sendMessage: vi.fn(() => Promise.resolve()),
-    onMessage: {
-      addListener: vi.fn((cb: (...args: any[]) => any) => {
-        messageListeners.push(cb);
-      }),
-      removeListener: vi.fn(),
-      hasListener: vi.fn(() => false),
-    },
-    onInstalled: {
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-    },
-    getURL: vi.fn((path: string) => `chrome-extension://mock-id/${path}`),
-    id: 'mock-extension-id',
+    onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
+    onInstalled: { addListener: vi.fn() },
+    getURL: vi.fn((path: string) => `chrome-extension://test-id/${path}`),
+    lastError: null as any,
   },
   identity: {
-    launchWebAuthFlow: vi.fn(() => Promise.resolve('https://redirect.example.com?code=test')),
-    getRedirectURL: vi.fn(() => 'https://mock-redirect.chromiumapp.org/'),
+    launchWebAuthFlow: vi.fn(),
+    getRedirectURL: vi.fn(() => 'https://test-redirect.chromiumapp.org/'),
   },
   sidePanel: {
     open: vi.fn(() => Promise.resolve()),
-    setOptions: vi.fn(() => Promise.resolve()),
   },
   alarms: {
     create: vi.fn(),
-    get: vi.fn(() => Promise.resolve(null)),
-    onAlarm: {
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-    },
+    onAlarm: { addListener: vi.fn() },
   },
   tabs: {
-    query: vi.fn(() => Promise.resolve([{ id: 1, url: 'https://example.com' }])),
-    sendMessage: vi.fn(() => Promise.resolve()),
-  },
-  action: {
-    setBadgeText: vi.fn(() => Promise.resolve()),
-    setBadgeBackgroundColor: vi.fn(() => Promise.resolve()),
+    create: vi.fn(() => Promise.resolve({ id: 1 })),
+    query: vi.fn(() => Promise.resolve([{ id: 1, windowId: 1 }])),
+    sendMessage: vi.fn(),
   },
 };
 
-vi.stubGlobal('chrome', chromeMock);
+Object.assign(globalThis, { chrome: chromeMock });
 
-// Environment variables
-process.env.DIET_API_URL = 'http://localhost:8000';
-process.env.JOURNAL_API_URL = 'http://localhost:3000';
-
-// Export helpers for tests
-export { storageStore, messageListeners, chromeMock };
+// Reset storage between tests
+beforeEach(() => {
+  Object.keys(storageStore).forEach((k) => delete storageStore[k]);
+  vi.clearAllMocks();
+});
